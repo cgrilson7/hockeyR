@@ -1,0 +1,61 @@
+---
+title: "Vignette Title"
+author: "Vignette Author"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Run the entire script below starting at ### DRYSCRPAE ### through the end (do not run the pbp_list or pbp_df portion).
+# After that has all been run and all functions are loaded, run the ds.compile_games function directly below this.
+# The "pbp_list" object is a list. [[1]] will pull the pbp specific dataframe out of the list.
+
+# I've updated all the below functions to work with the HTM links (updated event types). I've also commented out
+# a specific line in one of the functions that fixes a bug in Manny's original code that attempts to convert all
+# PHX games to ARI. Basically, you'll get all the games, but for 07-13 (I think), all PHX games will show the team
+# as "PHX" instead of ARI.
+
+
+
+# The "games = ..." portion can be a single game or a vector. I would recommend only scraping at most 400 games at one time.
+
+```{r, eval=FALSE}
+games <- c(20303:21230)
+# change here to the directory you want to write the pbp files to
+dir.create("~/HockeyStuff/xGGameBreakdowns/2014/")
+
+
+for (game in games) {
+  # this should be the same as the directory above
+  setwd("~/HockeyStuff/xGGameBreakdowns/2014/")
+  # you will need to change the season to reflect what season you want to scrape
+  pbp_list <- ds.compile_games(
+    games = game,
+    season = "20132014",
+    pause = 2,
+    try_tolerance = 5,
+    agents = ds.user_agents
+  )
+
+  pbp_df <- pbp_list[[1]]
+
+  # this creates a new directory inside the above directory to house each game
+  # pbp I do this because I create other stats based on that one pbp file but
+  # if you dont want it you can delete it
+  dir.create(paste0("~/HockeyStuff/xGGameBreakdowns/2014/", as.character(game)))
+  setwd(paste0("~/HockeyStuff/xGGameBreakdowns/2014/", as.character(game)))
+  # this writes the pbp to a text file neccesarry if you want to read it in
+  # again without scraping
+  write_delim(pbp_df, as.character(game), delim = "|")
+}
+```
