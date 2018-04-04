@@ -15,7 +15,8 @@ Imports: RCurl,
     doMC,
     rvest,
     foreach,
-    xml2
+    xml2,
+    readr
 Suggests: knitr,
     rmarkdown
 VignetteBuilder: knitr

@@ -5,7 +5,7 @@
 \title{Get Schedule}
 \usage{
 ds.get_schedule(start, end, try_tolerance = 3,
-  agents = ds.user_agents[sample(1:4, size = 1)])
+  agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)])
 }
 \arguments{
 \item{start}{Start Date}

@@ -16,8 +16,8 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Run the entire script below starting at ### DRYSCRPAE ### through the end (do not run the pbp_list or pbp_df portion).
-# After that has all been run and all functions are loaded, run the ds.compile_games function directly below this.
+Run the entire script below starting at ### DRYSCRPAE ### through the end (do not run the pbp_list or pbp_df portion).
+After that has all been run and all functions are loaded, run the ds.compile_games function directly below this.
 # The "pbp_list" object is a list. [[1]] will pull the pbp specific dataframe out of the list.
 
 # I've updated all the below functions to work with the HTM links (updated event types). I've also commented out
@@ -32,12 +32,12 @@ knitr::opts_chunk$set(
 ```{r, eval=FALSE}
 games <- c(20303:21230)
 # change here to the directory you want to write the pbp files to
-dir.create("~/HockeyStuff/xGGameBreakdowns/2014/")
+dir.create("./data")
 
 
 for (game in games) {
   # this should be the same as the directory above
-  setwd("~/HockeyStuff/xGGameBreakdowns/2014/")
+  setwd("./data")
   # you will need to change the season to reflect what season you want to scrape
   pbp_list <- ds.compile_games(
     games = game,

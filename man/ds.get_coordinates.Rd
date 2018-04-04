@@ -5,7 +5,8 @@
 \title{Get Coordinates}
 \usage{
 ds.get_coordinates(season, game_id, source, date, away_team,
-  try_tolerance = 3, agents = ds.user_agents[sample(1:4, size = 1)])
+  try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size
+  = 1)])
 }
 \arguments{
 \item{season}{a season}

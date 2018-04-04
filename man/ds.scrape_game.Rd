@@ -5,7 +5,7 @@
 \title{Scrape Game}
 \usage{
 ds.scrape_game(season, game_id, try_tolerance = 3,
-  agents = ds.user_agents[sample(1:4, size = 1)])
+  agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)])
 }
 \arguments{
 \item{season}{The season of the game}

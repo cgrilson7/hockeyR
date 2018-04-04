@@ -5,7 +5,7 @@
 \title{Get Shifts}
 \usage{
 ds.get_shifts(season, game_id, venue, source, try_tolerance = 3,
-  agents = ds.user_agents[sample(1:4, size = 1)])
+  agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)])
 }
 \arguments{
 \item{season}{a season}

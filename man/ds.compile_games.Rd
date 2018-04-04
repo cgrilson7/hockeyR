@@ -5,7 +5,7 @@
 \title{Compile Games}
 \usage{
 ds.compile_games(games, season, pause = 1, try_tolerance = 3,
-  agents = ds.user_agents[sample(1:4, size = 1)])
+  agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)])
 }
 \arguments{
 \item{games}{the specific games to compile}

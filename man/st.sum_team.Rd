@@ -15,5 +15,5 @@ st.sum_team(x, venue)
 player counting stats for the home or away team in the supplied pbp frame
 }
 \description{
-sum_team() summarizes all team counting stats from a PBP data frame object. x is expected to be a grouped data frame with home_team or away_team as a grouping variable for venue = "home" and venue = "away" respectively
+sum_team() summarizes all team counting stats from a ePBP data frame object. x is expected to be a grouped data frame with home_team or away_team as a grouping variable for venue = "home" and venue = "away" respectively
 }

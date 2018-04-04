@@ -10,7 +10,7 @@ st.pbp_enhance(pbp)
 \item{pbp}{a Corsica PBP data frame object}
 }
 \value{
-an enahnced Corsica PBP data frame object
+an enahnced Corsica PBP data frame object (ePBP)
 }
 \description{
 pbp_enhance() performs some preliminary operations on a given PBP data frame object and returns the enhanced version

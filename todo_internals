@@ -1,0 +1,32 @@
+Internals:
+ds.parse_shift
+ds.is_on
+ds.find_goalies
+ds.parse_shifts
+ds.clean.nums
+ds.parse_player
+ds.parse_date
+ds.parse_highlight
+ds.parse_game
+ds.parse_event
+
+Fail:
+future games
+(JSON):   "gameData" : {
+    "game" : {
+      "pk" : 2017021270,
+      "season" : "20172018",
+      "type" : "R"
+    },
+    "datetime" : {
+      "dateTime" : "2018-04-08T02:30:00Z"
+    },
+    "status" : {
+      "abstractGameState" : "Preview",
+      "codedGameState" : "1",
+      "detailedState" : "Scheduled",
+      "statusCode" : "1",
+      "startTimeTBD" : false
+      }
+      }
+

@@ -5,7 +5,7 @@
 \title{Scrape Team Profile}
 \usage{
 ds.scrape_team_profile(team_id, try_tolerance = 3,
-  agents = ds.user_agents[sample(1:4, size = 1)])
+  agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)])
 }
 \arguments{
 \item{team_id}{Team ID to get}

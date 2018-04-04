@@ -5,7 +5,7 @@
 \title{Get Roster}
 \usage{
 ds.get_roster(season, game_id, try_tolerance = 3,
-  agents = ds.user_agents[sample(1:4, size = 1)])
+  agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)])
 }
 \arguments{
 \item{season}{a season}
