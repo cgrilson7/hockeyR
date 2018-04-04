@@ -2,7 +2,6 @@
 
 export(brier)
 export(dcapply)
-export(ds.clean.nums)
 export(ds.compile_all_games)
 export(ds.compile_games)
 export(ds.find_goalie)

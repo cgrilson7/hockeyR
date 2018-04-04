@@ -75,7 +75,7 @@ ds.espn_codes <- data.frame(event = c(
 #' @importFrom dplyr %>%
 #'
 #' @return a list object
-#' @export
+#' @keywords internal
 ds.get_pbp <- function(season, game_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("http://www.nhl.com/scores/htmlreports/",
     as.character(season),
@@ -129,7 +129,7 @@ ds.get_pbp <- function(season, game_id, try_tolerance = 3, agents =hockeyR::ds.g
 #' @importFrom dplyr %>%
 #'
 #' @return a list object
-#' @export
+#' @keywords internal
 ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   if (tolower(source) == "htm") {
     if (tolower(venue) == "home") {
@@ -233,7 +233,7 @@ ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, age
 #' @importFrom dplyr %>%
 #'
 #' @return character vector
-#' @export
+#' @keywords internal
 ds.get_roster <- function(season, game_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("http://www.nhl.com/scores/htmlreports/",
     as.character(season),
@@ -281,7 +281,7 @@ ds.get_roster <- function(season, game_id, try_tolerance = 3, agents =hockeyR::d
 #' @importFrom dplyr %>%
 #'
 #' @return a json list object
-#' @export
+#' @keywords internal
 ds.get_highlights <- function(season, game_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("http://live.nhle.com/GameData/",
     as.character(season),
@@ -343,7 +343,7 @@ ds.get_highlights <- function(season, game_id, try_tolerance = 3, agents =hockey
 #' @importFrom dplyr %>%
 #'
 #' @return list object
-#' @export
+#' @keywords internal
 ds.get_coordinates <- function(season, game_id, source, date, away_team, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   if (tolower(source) == "espn") {
     day <- gsub("-", "", as.character(date))
@@ -524,7 +524,7 @@ ds.get_coordinates <- function(season, game_id, source, date, away_team, try_tol
 #' @importFrom dplyr %>%
 #'
 #' @return json list
-#' @export
+#' @keywords internal
 ds.get_team_profile <- function(team_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("https://statsapi.web.nhl.com/api/v1/teams/",
     as.character(team_id),
@@ -574,7 +574,7 @@ ds.get_team_profile <- function(team_id, try_tolerance = 3, agents =hockeyR::ds.
 #' @importFrom dplyr %>%
 #'
 #' @return json list objet
-#' @export
+#' @keywords internal
 ds.get_player_profile <- function(player_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("https://statsapi.web.nhl.com/api/v1/people/",
     as.character(player_id),
@@ -674,7 +674,7 @@ ds.get_schedule <- function(start, end, try_tolerance = 3, agents =hockeyR::ds.g
 #' @importFrom dplyr %>%
 #'
 #' @return data frame
-#' @export
+#' @keywords internal
 ds.parse_event <- function(x) {
   x$players %>%
     sapply(function(p) as.character(p$player$id)) %>%
@@ -717,7 +717,7 @@ ds.parse_event <- function(x) {
 #' @param x the highlights json
 #'
 #' @return a data frame.
-#' @export
+#' @keywords internal
 ds.parse_highlight <- function(x) {
   data.frame(
     game_date = NA,
@@ -745,7 +745,7 @@ ds.parse_highlight <- function(x) {
 #' @param x the schedule json
 #'
 #' @return a data frame
-#' @export
+#' @keywords internal
 ds.parse_game <- function(x) {
   data.frame(
     game_id = na_if_null(nabs(x$gamePk)),
@@ -771,7 +771,7 @@ ds.parse_game <- function(x) {
 #' @param x the schedule json with one or more games on a date
 #'
 #' @return data.frame
-#' @export
+#' @keywords internal
 ds.parse_date <- function(x) {
   date_df <- dcapply(x$games,
     ds.parse_game,
@@ -788,7 +788,7 @@ ds.parse_date <- function(x) {
 #' @param x the pbp json
 #'
 #' @return data frame of player
-#' @export
+#' @keywords internal
 ds.parse_player <- function(x) {
   data.frame(
     player_id = x$person$id,
@@ -808,7 +808,7 @@ ds.parse_player <- function(x) {
 #' @importFrom dplyr %>%
 #'
 #' @return time in seconds
-#' @export
+#' @keywords internal
 ds.seconds_from_ms <- function(ms) {
   strsplit(as.character(ms), ":") %>%
     unlist() %>%
@@ -830,8 +830,8 @@ ds.seconds_from_ms <- function(ms) {
 #' @param x event description(s)
 #'
 #' @return list
-#' @export
-ds.clean.nums <- function(x) {
+#' @keywords internal
+ds.clean_nums <- function(x) {
   t <- gsub("#|ONGOAL - ", "", as.character(unlist(x)))
   t2 <- list(c(t, rep(NA, times = (3 - length(t)))))
   return(t2)
@@ -847,7 +847,7 @@ ds.clean.nums <- function(x) {
 #' @importFrom dplyr %>%
 #'
 #' @return matrix
-#' @export
+#' @keywords internal
 ds.parse_shifts <- function(player, venue, inner, outer) {
   if (tolower(venue) == "home") {
     index <- which(outer[-1] == player)
@@ -892,7 +892,7 @@ ds.parse_shifts <- function(player, venue, inner, outer) {
 #' @param x a shift object
 #'
 #' @return a data frame of the shift
-#' @export
+#' @keywords internal
 ds.parse_shift <- function(x) {
   data.frame(
     game_date = NA,
@@ -922,7 +922,7 @@ ds.parse_shift <- function(x) {
 #' @param venue home or away
 #'
 #' @return numeric vector of 1 or 0 indicating player on ice
-#' @export
+#' @keywords internal
 ds.is_on <- function(player, pbp, venue) {
   regex <- paste(player,
     ",|",
@@ -953,7 +953,7 @@ ds.is_on <- function(player, pbp, venue) {
 #' @param roster roster information
 #'
 #' @return a vector of goalies, if any, else NA
-#' @export
+#' @keywords internal
 ds.find_goalie <- function(players, roster) {
   index <- which(players %in% roster$team_num[which(roster$player_position == "G")])
   goalie <- na_if_null(players[index])
@@ -1281,9 +1281,9 @@ ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents =hockeyR::
         time_elapsed = regmatches(X4, regexpr("[0-9]+:[0-9]{2}", X4)),
         game_seconds = 1200 * (nabs(X2) - 1) + ds.seconds_from_ms(time_elapsed),
         event_team = unlist(lapply(regmatches(as.character(X6), gregexpr(paste("(^", paste(ds.team_list, collapse = "|^"), ")", sep = ""), as.character(X6))), na_if_null)),
-        event_player_1 = unlist(lapply(regmatches(as.character(X6), gregexpr("#[0-9]+|ONGOAL - [0-9]+", as.character(X6))), ds.clean.nums))[seq(1, 3 * length(X6), 3)],
-        event_player_2 = unlist(lapply(regmatches(as.character(X6), gregexpr("#[0-9]+|ONGOAL - [0-9]+", as.character(X6))), ds.clean.nums))[seq(2, 3 * length(X6), 3)],
-        event_player_3 = unlist(lapply(regmatches(as.character(X6), gregexpr("#[0-9]+|ONGOAL - [0-9]+", as.character(X6))), ds.clean.nums))[seq(3, 3 * length(X6), 3)],
+        event_player_1 = unlist(lapply(regmatches(as.character(X6), gregexpr("#[0-9]+|ONGOAL - [0-9]+", as.character(X6))), ds.clean_nums))[seq(1, 3 * length(X6), 3)],
+        event_player_2 = unlist(lapply(regmatches(as.character(X6), gregexpr("#[0-9]+|ONGOAL - [0-9]+", as.character(X6))), ds.clean_nums))[seq(2, 3 * length(X6), 3)],
+        event_player_3 = unlist(lapply(regmatches(as.character(X6), gregexpr("#[0-9]+|ONGOAL - [0-9]+", as.character(X6))), ds.clean_nums))[seq(3, 3 * length(X6), 3)],
         event_zone = gsub(". [zZ]one", "", unlist(lapply(regmatches(as.character(X6), gregexpr("[a-zA-Z]{3}. [zZ]one", as.character(X6))), na_if_null))),
         event_detail = gsub(",|, |[A-Z]+ |#[0-9]+ |[A-Z]{2,}.", "", unlist(lapply(regmatches(as.character(X6), gregexpr(", [a-zA-Z|-]+,|[A-Z] .+[(].{4,}[)],|[A-Z] .+[(][a-zA-Z]{3,}[)],", as.character(X6))), na_if_null)))
       ) %>%
@@ -3047,16 +3047,22 @@ na_if_null <- function(x) {
 #' @export
 dcapply <- function(x, fun, combine, cores, ...) {
   if (cores > 1) {
-    doMC::registerDoMC(cores)
-
+    cl <- parallel::makeCluster(3)
+    doParallel::registerDoParallel(cl)
+    
+    doParallel::registerDoParallel(cores = cores)
+    
     chunks <- split(x, cut(1:length(x), cores))
-
+    
     foreach::foreach(i = 1:cores, .combine = c) %dopar% {
       chunks[[i]] %>%
         lapply(fun, ...)
     } -> list
-
+    
     combined <- do.call(combine, list)
+    
+    parallel::stopCluster(cl)
+    
   } else {
     list <- lapply(x, fun, ...)
 
