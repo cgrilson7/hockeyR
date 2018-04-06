@@ -17,3 +17,4 @@ a vector of goalies, if any, else NA
 \description{
 find_goalie() returns a vector containing all goaltenders in a given player vector
 }
+\keyword{internal}

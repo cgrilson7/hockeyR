@@ -22,3 +22,4 @@ a json list object
 \description{
 get_highlights() imports the highlights page corresponding to a given year and game ID and returns a JSON list object.
 }
+\keyword{internal}

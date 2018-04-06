@@ -20,3 +20,4 @@ json list objet
 \description{
 get_player_profile() imports the player profile page corresponding to a given player ID and returns a JSON list object.
 }
+\keyword{internal}

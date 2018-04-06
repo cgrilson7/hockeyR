@@ -15,3 +15,4 @@ a data frame of the shift
 \description{
 parse_shift() parses a single shift from the Shifts JSON object and returns a data frame.
 }
+\keyword{internal}

@@ -26,3 +26,4 @@ a list object
 \description{
 get_shifts() imports the shift report page corresponding to a given year, game ID and venue and returns a list object.
 }
+\keyword{internal}

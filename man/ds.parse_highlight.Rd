@@ -15,3 +15,4 @@ a data frame.
 \description{
 parse_highlight() parses a single highlight from the Highlights JSON object and returns a data frame
 }
+\keyword{internal}

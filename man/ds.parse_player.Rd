@@ -15,3 +15,4 @@ data frame of player
 \description{
 parse_player() parses a single player from the PBP JSON object and returns a data frame.
 }
+\keyword{internal}

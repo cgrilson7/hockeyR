@@ -21,3 +21,4 @@ parse_date() uses an inner function \code{parse_game()}.
 \seealso{
 parse_game
 }
+\keyword{internal}

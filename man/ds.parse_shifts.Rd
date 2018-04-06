@@ -21,3 +21,4 @@ matrix
 \description{
 parse_shifts() returns a matrix containing shift information for a single player
 }
+\keyword{internal}

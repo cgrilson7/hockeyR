@@ -220,7 +220,90 @@ ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, age
     }
 
     return(raw_json)
-  }
+  } else if (tolower(source) == "pbp"){
+    shift_pbp <- hockeyR:::ds.get_pbp(season_, game_id_, try_tolerance, agents)
+    shift_pbp_body <- shift_pbp[[2]]
+    matrix(shift_pbp_body,
+           byrow = TRUE,
+           ncol = 8
+    ) %>%
+      data.frame() %>%
+      dplyr::filter(X2 != "Per") ->
+      shift_pbp_raw
+
+    home_team_ <- gsub(" On Ice", "", shift_pbp_body[8])
+    away_team_ <- gsub(" On Ice", "", shift_pbp_body[7])
+
+    shift_pbp_raw %>%
+      dplyr::filter(
+        X4 != "",
+        X2 != ""
+      ) %>%
+      dplyr::mutate(
+        home_team = home_team_,
+        away_team = away_team_,
+        time_elapsed = regmatches(X4, regexpr("[0-9]+:[0-9]{2}", X4)),
+        game_seconds = 1200 * (nabs(X2) - 1) + hockeyR:::ds.seconds_from_ms(time_elapsed),
+        home_on_ice = lapply(stringr::str_match_all(X7, pattern='[0-9]+'), function(x) paste(sort(x),collapse=",")),
+        away_on_ice = lapply(stringr::str_match_all(X8, pattern='[0-9]+'), function(x) paste(sort(x),collapse=","))
+      ) %>%
+      dplyr::select(
+        X2 = Per,
+        home_team,
+        away_team,
+        time_elapsed,
+        game_seconds,
+        home_on_ice,
+        away_on_ice
+      ) %>%
+      tidyr::separate(home_on_ice, c('h1','h2','h3','h4','h5','h6'), extra = 'drop', sep=",", convert = TRUE, fill='right') %>%
+      tidyr::separate(away_on_ice, c('a1','a2','a3','a4','a5','a6'), extra = 'drop', sep=",", convert = TRUE, fill='right') %>%
+      data.frame() -> shift_pbp_df
+
+    # shifts<-data.frame(number = integer(), period = integer(), start = character(), end = character(), length = integer(), stringsAsFactors = FALSE)
+    # for(i in 2:nrow(shift_pbp_df)-1){
+    #   if(venue == 'home'){
+    #     if(player_num %in% shift_pbp_df[i,c('h1','h2','h3','h4','h5','h6')){
+    #       if(player_num %in% shift_pbp_df[i-1,c('h1','h2','h3','h4','h5','h6')] &&
+    #          player_num %in% shift_pbp_df[i+1,c('h1','h2','h3','h4','h5','h6')]){
+    #         next
+    #       } else if (player_num %in% shift_pbp_df[i-1,c('h1','h2','h3','h4','h5','h6')] &&
+    #                  !(player_num %in% shift_pbp_df[i+1,c('h1','h2','h3','h4','h5','h6')])) {
+    #         #end
+    #         shifts[nrow(shifts),'end']<-shift_pbp_df[i, 'time_elapsed']
+    #         shifts[nrow(shifts),'length']<-shift_pbp_df[i, 'game_seconds']-shifs[nrow(shifts),'length']
+    #       } else if (!(player_num %in% shift_pbp_df[i-1,c('h1','h2','h3','h4','h5','h6')]) &&
+    #                  (player_num %in% shift_pbp_df[i+1,c('h1','h2','h3','h4','h5','h6')])){
+    #         #start
+    #         shifts[nrow(shifts)+1, ]<-c(nrow(shifts)+1, shift_pbp_df[i, 'Per'], shift_pbp_df[i, 'time_elapsed'], '', shift_pbp_df[i, 'game_seconds'])
+    #       } else if (!(player_num %in% shift_pbp_df[i-1,c('h1','h2','h3','h4','h5','h6')]) &&
+    #                  !(player_num %in% shift_pbp_df[i+1,c('h1','h2','h3','h4','h5','h6')])){
+    #         shifts[nrow(shifts)+1,]<-c(nrow(shifts)+1, shift_pbp_df[i, 'Per'], shift_pbp_df[i, 'time_elapsed'], shift_pbp_df[i, 'time_elapsed'], 0)
+    #       }
+    #     }
+    #   } else if (venue == 'away'){
+    #     if(player_num %in% shift_pbp_df[i,c('a1','a2','a3','a4','a5','a6')){
+    #       if(player_num %in% shift_pbp_df[i-1,c('a1','a2','a3','a4','a5','a6')] &&
+    #          player_num %in% shift_pbp_df[i+1,c('a1','a2','a3','a4','a5','a6')]){
+    #         next
+    #       } else if (player_num %in% shift_pbp_df[i-1,c('a1','a2','a3','a4','a5','a6')] &&
+    #                  !(player_num %in% shift_pbp_df[i+1,c('a1','a2','a3','a4','a5','a6')])) {
+    #         #end
+    #         shifts[nrow(shifts),'end']<-shift_pbp_df[i, 'time_elapsed']
+    #         shifts[nrow(shifts),'length']<-shift_pbp_df[i, 'game_seconds']-shifs[nrow(shifts),'length']
+    #       } else if (!(player_num %in% shift_pbp_df[i-1,c('a1','a2','a3','a4','a5','a6')]) &&
+    #                  (player_num %in% shift_pbp_df[i+1,c('a1','a2','a3','a4','a5','a6')])){
+    #         #start
+    #         shifts[nrow(shifts)+1, ]<-c(nrow(shifts)+1, shift_pbp_df[i, 'Per'], shift_pbp_df[i, 'time_elapsed'], '', shift_pbp_df[i, 'game_seconds'])
+    #       } else if (!(player_num %in% shift_pbp_df[i-1,c('a1','a2','a3','a4','a5','a6')]) &&
+    #                  !(player_num %in% shift_pbp_df[i+1,c('a1','a2','a3','a4','a5','a6')])){
+    #         shifts[nrow(shifts)+1,]<-c(nrow(shifts)+1, shift_pbp_df[i, 'Per'], shift_pbp_df[i, 'time_elapsed'], shift_pbp_df[i, 'time_elapsed'], 0)
+    #       }
+    #     }
+    #   }
+    # }
+
+    }
 }
 
 #' Get Roster
@@ -1502,6 +1585,10 @@ ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents =hockeyR::
       "rbind",
       cores = 1
     )
+
+
+    ### TODO Switch to PBP fake shift information
+    shifts <- ds.get_shifts(season_, game_id_, venue = NULL, source = "pbp", try_tolerance, agents)
 
     if (!is.null(shifts_df)) {
       shifts_df %>%
@@ -3049,20 +3136,20 @@ dcapply <- function(x, fun, combine, cores, ...) {
   if (cores > 1) {
     cl <- parallel::makeCluster(3)
     doParallel::registerDoParallel(cl)
-    
+
     doParallel::registerDoParallel(cores = cores)
-    
+
     chunks <- split(x, cut(1:length(x), cores))
-    
+
     foreach::foreach(i = 1:cores, .combine = c) %dopar% {
       chunks[[i]] %>%
         lapply(fun, ...)
     } -> list
-    
+
     combined <- do.call(combine, list)
-    
+
     parallel::stopCluster(cl)
-    
+
   } else {
     list <- lapply(x, fun, ...)
 

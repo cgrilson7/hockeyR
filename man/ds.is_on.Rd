@@ -19,3 +19,4 @@ numeric vector of 1 or 0 indicating player on ice
 \description{
 is_on() returns a numeric vector indicating 1 if a given player is on ice during the event corresponding to the row index in the given PBP object
 }
+\keyword{internal}

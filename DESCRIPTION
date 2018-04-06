@@ -3,8 +3,7 @@ Title: Hockey Analytics Scripts from the Community
 Version: 0.0.0.9000
 Authors@R: c(person("Philip", "Bulsink", email = "bulsinkp@gmail.com", role = c("cre")),
     person("Emmanuel", "Perry", role=c("aut")),
-    person("Matt", "Barlowe", role=c("aut"))
-)
+    person("Matt", "Barlowe", role=c("aut")))
 Description: This package holds hockey analytics scripts from others in the hockey community. See individual R files for script attribution or below.
 Depends: R (>= 3.4.4)
 License: GPL-3 + file LICENSE

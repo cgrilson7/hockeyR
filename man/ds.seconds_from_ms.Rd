@@ -15,3 +15,4 @@ time in seconds
 \description{
 seconds_from_ms() returns a numeric vector of representation in seconds of a given vector in M:S format.
 }
+\keyword{internal}

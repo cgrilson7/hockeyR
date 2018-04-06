@@ -20,3 +20,4 @@ json list
 \description{
 get_team_profile() imports the team profile page corresponding to a given team ID and returns a JSON list object.
 }
+\keyword{internal}

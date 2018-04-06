@@ -15,3 +15,4 @@ data frame
 \description{
 parse_event() parses a single event from the PBP JSON object and returns a data frame
 }
+\keyword{internal}

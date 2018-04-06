@@ -29,3 +29,4 @@ list object
 \description{
 get_coordinates() imports the event coordinates corresponding to a given year and game ID and returns a list object.
 }
+\keyword{internal}
