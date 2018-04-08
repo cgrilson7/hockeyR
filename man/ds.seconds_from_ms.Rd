@@ -2,7 +2,7 @@
 % Please edit documentation in R/dryscrape.R
 \name{ds.seconds_from_ms}
 \alias{ds.seconds_from_ms}
-\title{Seconds from MS}
+\title{Seconds from (HH):MM:SS}
 \usage{
 ds.seconds_from_ms(ms)
 }

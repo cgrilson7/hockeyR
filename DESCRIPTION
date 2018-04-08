@@ -18,7 +18,9 @@ Imports: RCurl,
     doParallel,
     parallel,
     xml2,
-    readr
+    readr,
+    tidyr,
+    stringr
 Suggests: knitr,
     rmarkdown
 VignetteBuilder: knitr

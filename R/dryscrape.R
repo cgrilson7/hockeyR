@@ -1,4 +1,4 @@
-#This can scrape from 20032004 onward
+# This can scrape from 20032004 onward
 
 # Attribution -------------------------------------------------------------
 
@@ -17,25 +17,25 @@ ds.attribution <- function() {
 #'
 #' @return a list of games as character values
 #' @export
-ds.get_all_games <- function(){
+ds.get_all_games <- function() {
   return(as.character(c(
     20001:21271, 30111:30117, 30121:30127, 30131:30137, 30141:30147, 30151:30157,
     30161:30167, 30171:30177, 30181:30187, 30211:30217, 30221:30227, 30231:30237, 30241:30247, 30311:30317,
-    30321:30327, 30411:30417)))
+    30321:30327, 30411:30417
+  )))
 }
 
 #' Get User Agents
 #'
 #' @return Returns a list of random user agents ca. 2017
 #' @export
-ds.get_user_agents<-function(){
+ds.get_user_agents <- function() {
   return(c(
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.111 Safari/537.36",
     "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36",
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.5.2171.95 Safari/537.36",
     "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.86 Safari/537.36"
-    )
-  )
+  ))
 }
 
 ds.pbp_colnames <- c(
@@ -76,7 +76,7 @@ ds.espn_codes <- data.frame(event = c(
 #'
 #' @return a list object
 #' @keywords internal
-ds.get_pbp <- function(season, game_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.get_pbp <- function(season, game_id, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("http://www.nhl.com/scores/htmlreports/",
     as.character(season),
     "/PL0",
@@ -130,7 +130,7 @@ ds.get_pbp <- function(season, game_id, try_tolerance = 3, agents =hockeyR::ds.g
 #'
 #' @return a list object
 #' @keywords internal
-ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   if (tolower(source) == "htm") {
     if (tolower(venue) == "home") {
       url <- paste("http://www.nhl.com/scores/htmlreports/",
@@ -220,19 +220,24 @@ ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, age
     }
 
     return(raw_json)
-  } else if (tolower(source) == "pbp"){
-    shift_pbp <- hockeyR:::ds.get_pbp(season_, game_id_, try_tolerance, agents)
+  } else if (tolower(source) == "pbp") {
+    shift_pbp <- ds.get_pbp(season_, game_id_, try_tolerance, agents)
+    roster <- ds.parse_roster(ds.get_roster(season_, game_id_, try_tolerance, agents))
+
     shift_pbp_body <- shift_pbp[[2]]
     matrix(shift_pbp_body,
-           byrow = TRUE,
-           ncol = 8
+      byrow = TRUE,
+      ncol = 8
     ) %>%
       data.frame() %>%
       dplyr::filter(X2 != "Per") ->
-      shift_pbp_raw
+    shift_pbp_raw
 
     home_team_ <- gsub(" On Ice", "", shift_pbp_body[8])
     away_team_ <- gsub(" On Ice", "", shift_pbp_body[7])
+
+    roster$team[roster$venue == "Home"] <- home_team_
+    roster$team[roster$venue == "Away"] <- away_team_
 
     shift_pbp_raw %>%
       dplyr::filter(
@@ -240,15 +245,16 @@ ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, age
         X2 != ""
       ) %>%
       dplyr::mutate(
-        home_team = home_team_,
         away_team = away_team_,
+        home_team = home_team_,
         time_elapsed = regmatches(X4, regexpr("[0-9]+:[0-9]{2}", X4)),
-        game_seconds = 1200 * (nabs(X2) - 1) + hockeyR:::ds.seconds_from_ms(time_elapsed),
-        home_on_ice = lapply(stringr::str_match_all(X7, pattern='[0-9]+'), function(x) paste(sort(x),collapse=",")),
-        away_on_ice = lapply(stringr::str_match_all(X8, pattern='[0-9]+'), function(x) paste(sort(x),collapse=","))
+        game_seconds = 1200 * (nabs(X2) - 1) + ds.seconds_from_ms(time_elapsed),
+        away_on_ice = lapply(stringr::str_match_all(X7, pattern = "[0-9]+"), function(x) paste(sort(x), collapse = ",")),
+        home_on_ice = lapply(stringr::str_match_all(X8, pattern = "[0-9]+"), function(x) paste(sort(x), collapse = ","))
       ) %>%
+      dplyr::rename(game_period = X2) %>%
       dplyr::select(
-        X2 = Per,
+        game_period,
         home_team,
         away_team,
         time_elapsed,
@@ -256,54 +262,50 @@ ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, age
         home_on_ice,
         away_on_ice
       ) %>%
-      tidyr::separate(home_on_ice, c('h1','h2','h3','h4','h5','h6'), extra = 'drop', sep=",", convert = TRUE, fill='right') %>%
-      tidyr::separate(away_on_ice, c('a1','a2','a3','a4','a5','a6'), extra = 'drop', sep=",", convert = TRUE, fill='right') %>%
+      tidyr::separate(away_on_ice, c("a1", "a2", "a3", "a4", "a5", "a6"), extra = "drop", sep = ",", convert = TRUE, fill = "right") %>%
+      tidyr::separate(home_on_ice, c("h1", "h2", "h3", "h4", "h5", "h6"), extra = "drop", sep = ",", convert = TRUE, fill = "right") %>%
+      dplyr::mutate(
+        a1 = ifelse(is.na(a1), no = paste0(away_team, a1), yes = NA),
+        a2 = ifelse(is.na(a2), no = paste0(away_team, a2), yes = NA),
+        a3 = ifelse(is.na(a3), no = paste0(away_team, a3), yes = NA),
+        a4 = ifelse(is.na(a4), no = paste0(away_team, a4), yes = NA),
+        a5 = ifelse(is.na(a5), no = paste0(away_team, a5), yes = NA),
+        a6 = ifelse(is.na(a6), no = paste0(away_team, a6), yes = NA),
+        h1 = ifelse(is.na(h1), no = paste0(home_team, h1), yes = NA),
+        h2 = ifelse(is.na(h2), no = paste0(home_team, h2), yes = NA),
+        h3 = ifelse(is.na(h3), no = paste0(home_team, h3), yes = NA),
+        h4 = ifelse(is.na(h4), no = paste0(home_team, h4), yes = NA),
+        h5 = ifelse(is.na(h5), no = paste0(home_team, h5), yes = NA),
+        h6 = ifelse(is.na(h6), no = paste0(home_team, h6), yes = NA)
+      ) %>%
       data.frame() -> shift_pbp_df
 
-    # shifts<-data.frame(number = integer(), period = integer(), start = character(), end = character(), length = integer(), stringsAsFactors = FALSE)
-    # for(i in 2:nrow(shift_pbp_df)-1){
-    #   if(venue == 'home'){
-    #     if(player_num %in% shift_pbp_df[i,c('h1','h2','h3','h4','h5','h6')){
-    #       if(player_num %in% shift_pbp_df[i-1,c('h1','h2','h3','h4','h5','h6')] &&
-    #          player_num %in% shift_pbp_df[i+1,c('h1','h2','h3','h4','h5','h6')]){
-    #         next
-    #       } else if (player_num %in% shift_pbp_df[i-1,c('h1','h2','h3','h4','h5','h6')] &&
-    #                  !(player_num %in% shift_pbp_df[i+1,c('h1','h2','h3','h4','h5','h6')])) {
-    #         #end
-    #         shifts[nrow(shifts),'end']<-shift_pbp_df[i, 'time_elapsed']
-    #         shifts[nrow(shifts),'length']<-shift_pbp_df[i, 'game_seconds']-shifs[nrow(shifts),'length']
-    #       } else if (!(player_num %in% shift_pbp_df[i-1,c('h1','h2','h3','h4','h5','h6')]) &&
-    #                  (player_num %in% shift_pbp_df[i+1,c('h1','h2','h3','h4','h5','h6')])){
-    #         #start
-    #         shifts[nrow(shifts)+1, ]<-c(nrow(shifts)+1, shift_pbp_df[i, 'Per'], shift_pbp_df[i, 'time_elapsed'], '', shift_pbp_df[i, 'game_seconds'])
-    #       } else if (!(player_num %in% shift_pbp_df[i-1,c('h1','h2','h3','h4','h5','h6')]) &&
-    #                  !(player_num %in% shift_pbp_df[i+1,c('h1','h2','h3','h4','h5','h6')])){
-    #         shifts[nrow(shifts)+1,]<-c(nrow(shifts)+1, shift_pbp_df[i, 'Per'], shift_pbp_df[i, 'time_elapsed'], shift_pbp_df[i, 'time_elapsed'], 0)
-    #       }
-    #     }
-    #   } else if (venue == 'away'){
-    #     if(player_num %in% shift_pbp_df[i,c('a1','a2','a3','a4','a5','a6')){
-    #       if(player_num %in% shift_pbp_df[i-1,c('a1','a2','a3','a4','a5','a6')] &&
-    #          player_num %in% shift_pbp_df[i+1,c('a1','a2','a3','a4','a5','a6')]){
-    #         next
-    #       } else if (player_num %in% shift_pbp_df[i-1,c('a1','a2','a3','a4','a5','a6')] &&
-    #                  !(player_num %in% shift_pbp_df[i+1,c('a1','a2','a3','a4','a5','a6')])) {
-    #         #end
-    #         shifts[nrow(shifts),'end']<-shift_pbp_df[i, 'time_elapsed']
-    #         shifts[nrow(shifts),'length']<-shift_pbp_df[i, 'game_seconds']-shifs[nrow(shifts),'length']
-    #       } else if (!(player_num %in% shift_pbp_df[i-1,c('a1','a2','a3','a4','a5','a6')]) &&
-    #                  (player_num %in% shift_pbp_df[i+1,c('a1','a2','a3','a4','a5','a6')])){
-    #         #start
-    #         shifts[nrow(shifts)+1, ]<-c(nrow(shifts)+1, shift_pbp_df[i, 'Per'], shift_pbp_df[i, 'time_elapsed'], '', shift_pbp_df[i, 'game_seconds'])
-    #       } else if (!(player_num %in% shift_pbp_df[i-1,c('a1','a2','a3','a4','a5','a6')]) &&
-    #                  !(player_num %in% shift_pbp_df[i+1,c('a1','a2','a3','a4','a5','a6')])){
-    #         shifts[nrow(shifts)+1,]<-c(nrow(shifts)+1, shift_pbp_df[i, 'Per'], shift_pbp_df[i, 'time_elapsed'], shift_pbp_df[i, 'time_elapsed'], 0)
-    #       }
-    #     }
-    #   }
-    # }
+    shifts_df <- ds.parse_shifts_from_pbp(shift_pbp_df, roster) %>%
+      dplyr::mutate(
+        game_date = NA,
+        game_id = paste0(season_, "0", game_id_),
+        season = NA,
+        session = NA,
+        player_id = NA
+      ) %>%
+      dplyr::select(
+        game_date,
+        game_id,
+        season,
+        session,
+        shift_number,
+        shift_period,
+        shift_start,
+        shift_end,
+        shift_duration,
+        team,
+        player_id,
+        player_name_first,
+        player_name_last
+      )
 
-    }
+    return(shifts_df)
+  }
 }
 
 #' Get Roster
@@ -317,7 +319,7 @@ ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, age
 #'
 #' @return character vector
 #' @keywords internal
-ds.get_roster <- function(season, game_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.get_roster <- function(season, game_id, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("http://www.nhl.com/scores/htmlreports/",
     as.character(season),
     "/RO0",
@@ -365,7 +367,7 @@ ds.get_roster <- function(season, game_id, try_tolerance = 3, agents =hockeyR::d
 #'
 #' @return a json list object
 #' @keywords internal
-ds.get_highlights <- function(season, game_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.get_highlights <- function(season, game_id, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("http://live.nhle.com/GameData/",
     as.character(season),
     "/",
@@ -427,7 +429,7 @@ ds.get_highlights <- function(season, game_id, try_tolerance = 3, agents =hockey
 #'
 #' @return list object
 #' @keywords internal
-ds.get_coordinates <- function(season, game_id, source, date, away_team, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.get_coordinates <- function(season, game_id, source, date, away_team, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   if (tolower(source) == "espn") {
     day <- gsub("-", "", as.character(date))
 
@@ -608,7 +610,7 @@ ds.get_coordinates <- function(season, game_id, source, date, away_team, try_tol
 #'
 #' @return json list
 #' @keywords internal
-ds.get_team_profile <- function(team_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.get_team_profile <- function(team_id, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("https://statsapi.web.nhl.com/api/v1/teams/",
     as.character(team_id),
     sep = ""
@@ -658,7 +660,7 @@ ds.get_team_profile <- function(team_id, try_tolerance = 3, agents =hockeyR::ds.
 #'
 #' @return json list objet
 #' @keywords internal
-ds.get_player_profile <- function(player_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.get_player_profile <- function(player_id, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("https://statsapi.web.nhl.com/api/v1/people/",
     as.character(player_id),
     sep = ""
@@ -709,7 +711,7 @@ ds.get_player_profile <- function(player_id, try_tolerance = 3, agents =hockeyR:
 #'
 #' @return a json list object
 #' @export
-ds.get_schedule <- function(start, end, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.get_schedule <- function(start, end, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   url <- paste("https://statsapi.web.nhl.com/api/v1/schedule?startDate=",
     as.character(start),
     "&endDate=",
@@ -884,7 +886,40 @@ ds.parse_player <- function(x) {
   return(player_df)
 }
 
-#' Seconds from MS
+#' Parse Roster
+#' @description parse_roster parses a roster object from ds.get_roster() and returns a data frame.
+#'
+#' @param x a roster object from ds.get_roster()
+#'
+#' @return a data frame of the rosters
+#' @keywords internal
+ds.parse_roster <- function(roster) {
+  roster_lists_starts <- grep(pattern = "^#\\r\\nPos\\r\\nName\\r\\n$", x = roster)
+  scratches_starts <- grep(pattern = "^Scratches", x = roster)
+  roster_lists <- roster_lists_starts[roster_lists_starts < scratches_starts]
+  away_list <- roster[c((roster_lists[1] + 1):(roster_lists[2] - 1))]
+  home_list <- roster[c((roster_lists[2] + 1):(scratches_starts - 2))]
+  away_roster <- as.data.frame(
+    stringr::str_match(away_list, pattern = "([0-9]+)\r\n([A-Z])\r\n([A-Z\\-\\.]+)\\s([A-Z\\-\\.\\s]+)(?:\\([C|A]\\))?\r\n")[, 2:5],
+    stringsAsFactors = FALSE
+  )
+  colnames(away_roster) <- c("player_number", "player_position", "first_name", "last_name")
+  away_roster$last_name <- as.character(trimws(away_roster$last_name))
+  away_roster$venue <- "Away"
+  home_roster <- as.data.frame(
+    stringr::str_match(home_list, pattern = "([0-9]+)\r\n([A-Z])\r\n([A-Z\\-\\.]+)\\s([A-Z\\-\\.\\s]+)(?:\\([C|A]\\))?\r\n")[, 2:5],
+    stringsAsFactors = FALSE
+  )
+  colnames(home_roster) <- c("player_number", "player_position", "first_name", "last_name")
+  home_roster$last_name <- as.character(trimws(home_roster$last_name))
+  home_roster$venue <- "Home"
+  rosters <- rbind(home_roster, away_roster)
+
+  rosters$num_first_last <- apply(rosters, 1, function(x) sprintf("%s %s, %s", as.character(x[1]), x[4], x[3]))
+  return(rosters)
+}
+
+#' Seconds from (HH):MM:SS
 #' @description seconds_from_ms() returns a numeric vector of representation in seconds of a given vector in M:S format.
 #'
 #' @param ms minute:second time
@@ -905,6 +940,19 @@ ds.seconds_from_ms <- function(ms) {
   seconds <- 60 * time_mat[, 1] + time_mat[, 2]
 
   return(seconds)
+}
+
+
+#' MM:SS from seconds
+#'
+#' @param seconds Number of seconds
+#'
+#' @return MM:SS of play time in that period (returns from 00:00 to 20:00, 1201 seconds = 00:01)
+#' @keywords internal
+ds.ms_from_seconds <- function(seconds) {
+  seconds <- round(seconds)
+  seconds <- seconds %% 1200
+  return(sprintf("%02d:%02d", seconds %/% 60, seconds %% 60))
 }
 
 #' Clean Nums
@@ -995,6 +1043,88 @@ ds.parse_shift <- function(x) {
   shift_df
 
   return(shift_df)
+}
+
+#' Parse Shifts from PBP
+#' @description Sometimes the .json or .htm shift reports are unavailable. This creates approximate shift table from the pbp.
+#'
+#' @param shift_pbp_df the formatted shift pbp dataframe
+#' @param roster a roster collected from the .htm
+#'
+#' @return shifts in a dataframe
+#' @keywords internal
+ds.parse_shifts_from_pbp <- function(shift_pbp_df, roster) {
+  all_shifts <- data.frame(
+    shift_number = integer(),
+    shift_period = integer(),
+    shift_start_seconds = numeric(),
+    shift_end_seconds = numeric(),
+    shift_length = numeric(),
+    team = character(),
+    player_name_first = character(),
+    player_name_last = character()
+  )
+  shift_number <- 0
+
+  shift_pbp_df[1, c("h1", "h2", "h3", "h4", "h5", "h6", "a1", "a2", "a3", "a4", "a5", "a6")] <- NA
+
+  hometeam <- roster[1, "team"]
+  roster$venue <- ifelse(roster$team == hometeam, yes = "home", no = "away")
+  roster %>%
+    tidyr::unite(team_num, team, player_number, sep = "", remove = FALSE) -> roster
+  for (p in 1:nrow(roster)) {
+    player <- roster[p, ]
+    player_num <- player$team_num
+    if (player$venue == "home") {
+      pcol <- c("h1", "h2", "h3", "h4", "h5", "h6")
+    } else {
+      pcol <- c("a1", "a2", "a3", "a4", "a5", "a6")
+    }
+    shifts <- data.frame(
+      shift_number = integer(),
+      shift_period = integer(),
+      shift_start_seconds = numeric(),
+      shift_end_seconds = numeric(),
+      length = integer(),
+      stringsAsFactors = FALSE
+    )
+
+    for (i in 1:(nrow(shift_pbp_df) - 1)) {
+      if (player_num %in% shift_pbp_df[i, pcol]) {
+        if (player_num %in% shift_pbp_df[i - 1, pcol] &&
+          player_num %in% shift_pbp_df[i + 1, pcol]) {
+          next
+        } else if (player_num %in% shift_pbp_df[i - 1, pcol] &&
+          !(player_num %in% shift_pbp_df[i + 1, pcol])) {
+          # end
+          shifts[nrow(shifts), "shift_end_seconds"] <- mean(c(shift_pbp_df[i, "game_seconds"], shift_pbp_df[i + 1, "game_seconds"]))
+          shifts[nrow(shifts), "length"] <- shifts[nrow(shifts), "shift_end_seconds"] - shifts[nrow(shifts), "shift_start_seconds"]
+        } else if (!(player_num %in% shift_pbp_df[i - 1, pcol]) &&
+          (player_num %in% shift_pbp_df[i + 1, pcol])) {
+          # start
+          shift_number <- shift_number + 1
+          shifts[nrow(shifts) + 1, ] <- c(shift_number, shift_pbp_df[i, "game_period"], mean(c(shift_pbp_df[i - 1, "game_seconds"], shift_pbp_df[i, "game_seconds"])), 0, 0)
+        } else if (!(player_num %in% shift_pbp_df[i - 1, pcol]) &&
+          !(player_num %in% shift_pbp_df[i + 1, pcol])) {
+          shift_number <- shift_number + 1
+          shifts[nrow(shifts) + 1, ] <- c(shift_number, shift_pbp_df[i, "game_period"], shift_pbp_df[i, "game_seconds"], shift_pbp_df[i, "game_seconds"], 0)
+        }
+      }
+    }
+    if (nrow(shifts) > 0) {
+      shifts$team <- player$team
+      shifts$player_name_first <- player$first_name
+      shifts$player_name_last <- player$last_name
+
+      all_shifts <- rbind(all_shifts, shifts)
+    }
+  }
+
+  all_shifts$shift_start <- ds.ms_from_seconds(all_shifts$shift_start_seconds)
+  all_shifts$shift_end <- ds.ms_from_seconds(all_shifts$shift_end_seconds)
+  all_shifts$shift_duration <- ds.ms_from_seconds(all_shifts$length)
+
+  return(all_shifts)
 }
 
 #' Is On
@@ -1126,7 +1256,7 @@ ds.who <- function(player_id) {
 #'
 #' @return a data frame of team info
 #' @export
-ds.scrape_team_profile <- function(team_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.scrape_team_profile <- function(team_id, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   team_id_ <- nabs(team_id)
 
   team <- ds.get_team_profile(team_id_, try_tolerance, agents)
@@ -1159,7 +1289,7 @@ ds.scrape_team_profile <- function(team_id, try_tolerance = 3, agents =hockeyR::
 #'
 #' @return data frame of player info
 #' @export
-ds.scrape_player_profile <- function(player_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.scrape_player_profile <- function(player_id, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   player_id_ <- nabs(player_id)
 
   player <- ds.get_player_profile(player_id_, try_tolerance, agents)
@@ -1196,7 +1326,7 @@ ds.scrape_player_profile <- function(player_id, try_tolerance = 3, agents =hocke
 #'
 #' @return data frame schedule
 #' @export
-ds.scrape_schedule <- function(start, end, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.scrape_schedule <- function(start, end, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   start_ <- as.character(start)
   end_ <- as.character(end)
 
@@ -1222,7 +1352,7 @@ ds.scrape_schedule <- function(start, end, try_tolerance = 3, agents =hockeyR::d
 #'
 #' @return list object containing c([[1]] = PBP, [[2]] = Shifts, [[3]] = Highlights) is returned
 #' @export
-ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
   season_ <- as.character(season)
   game_id_ <- as.character(game_id)
 
@@ -1586,10 +1716,6 @@ ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents =hockeyR::
       cores = 1
     )
 
-
-    ### TODO Switch to PBP fake shift information
-    shifts <- ds.get_shifts(season_, game_id_, venue = NULL, source = "pbp", try_tolerance, agents)
-
     if (!is.null(shifts_df)) {
       shifts_df %>%
         dplyr::mutate(
@@ -1768,7 +1894,43 @@ ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents =hockeyR::
         data.frame() ->
       shifts_df
     } else {
-      return(list(NULL, NULL, NULL, NULL, NULL))
+      shifts_df <- ds.get_shifts(season_, game_id_, venue = NULL, source = "pbp", try_tolerance, agents)
+      roster_df <- ds.parse_roster(ds.get_roster(season_, game_id_, try_tolerance, agents))
+      roster_df %>%
+        tidyr::unite(player_name, first_name, last_name, sep = ".", remove = FALSE) %>%
+        tidyr::unite(name_match, first_name, last_name, sep = "", remove = FALSE) %>%
+        dplyr::mutate(
+          team_name = NA,
+          team = ifelse(venue == "Home", yes = home_team_, no = away_team_),
+          game_date = game_date_,
+          game_id = game_id_unique,
+          season = as.character(season_),
+          session = session_
+        ) %>%
+        tidyr::unite(team_num, team, player_num, sep = "", remove = FALSE) %>%
+        dplyr::select(
+          team_name,
+          team,
+          venue,
+          num_first_last,
+          game_date,
+          game_id,
+          season,
+          session,
+          player_number,
+          team_num,
+          first_name,
+          last_name,
+          player_name,
+          name_match,
+          player_position
+        ) %>%
+        data.frame() ->
+      roster_df
+
+      if (is.null(shifts_df)) {
+        return(list(NULL, NULL, NULL, NULL, NULL))
+      }
     }
   }
 
@@ -1840,8 +2002,8 @@ ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents =hockeyR::
 #' @return list object containing c([[1]] = PBP, [[2]] = Roster, [[3]] = Shifts) is returned
 #' @export
 ds.compile_games <- function(games, season, pause = 1, try_tolerance = 3,
-                             agents =hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
-  chgames<-as.character(games)
+                             agents = hockeyR::ds.get_user_agents()[sample(1:4, size = 1)]) {
+  chgames <- as.character(games)
   nested_games <- foreach::foreach(g = chgames) %do% {
     cat("\r", g, "...", sep = "")
     inner <- ds.scrape_game(season, g, try_tolerance, agents)
@@ -2231,10 +2393,10 @@ ds.compile_games <- function(games, season, pause = 1, try_tolerance = 3,
 #'
 #' @return game score contribution weight.
 #' @export
-get.st.game_score_weight<-function(){
+get.st.game_score_weight <- function() {
   return(c("G" = 0.75, "A1" = 0.7, "A2" = 0.55, "iSF" = 0.075, "iBLK" = 0.05, "iPENT" = -0.15, "iPEND" = 0.15, "iFOW" = 0.01, "iFOL" = -0.01, "CF" = 0.05, "CA" = -0.05, "GF" = 0.15, "GA" = -0.15))
 }
-st.game_score_weight<-get.st.game_score_weight()
+st.game_score_weight <- get.st.game_score_weight()
 
 c("SHOT", "GOAL") -> st.shot_events
 
@@ -2363,7 +2525,7 @@ st.pbp_enhance <- function(pbp) {
   #
 
   pbp %>%
-    dplyr::mutate_at(dplyr::funs(nabs), coords_x, coords_y, game_period, game_seconds) %>%  ## used to be mutate_each
+    dplyr::mutate_at(dplyr::funs(nabs), coords_x, coords_y, game_period, game_seconds) %>% ## used to be mutate_each
     data.frame() ->
   pbp
 
@@ -2415,18 +2577,18 @@ st.sum_team <- function(x, venue) {
         SA = sum(event_type %in% st.shot_events & event_team == away_team),
         GF = sum(event_type == "GOAL" & event_team == team),
         GA = sum(event_type == "GOAL" & event_team == away_team),
-        #xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
-        #xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #ACF = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == team))),
-        #ACA = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
-        #AFF = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == team))),
-        #AFA = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #ASF = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == team))),
-        #ASA = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
-        #AGF = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == team))),
-        #AGA = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
-        #AxGF = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
-        #AxGA = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
+        # xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # ACF = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == team))),
+        # ACA = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
+        # AFF = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == team))),
+        # AFA = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # ASF = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == team))),
+        # ASA = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
+        # AGF = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == team))),
+        # AGA = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
+        # AxGF = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
+        # AxGA = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
         OZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside != home_rinkside),
         DZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside == home_rinkside),
         NZS = sum(event_type == "FACEOFF" & event_rinkside == "N"),
@@ -2473,18 +2635,18 @@ st.sum_team <- function(x, venue) {
         SA = sum(event_type %in% st.shot_events & event_team == home_team),
         GF = sum(event_type == "GOAL" & event_team == team),
         GA = sum(event_type == "GOAL" & event_team == home_team),
-        #xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
-        #xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #ACF = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == team))),
-        #ACA = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
-        #AFF = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == team))),
-        #AFA = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #ASF = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == team))),
-        #ASA = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
-        #AGF = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == team))),
-        #AGA = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
-        #AxGF = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
-        #AxGA = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
+        # xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # ACF = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == team))),
+        # ACA = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
+        # AFF = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == team))),
+        # AFA = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # ASF = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == team))),
+        # ASA = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
+        # AGF = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == team))),
+        # AGA = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
+        # AxGF = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
+        # AxGA = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
         OZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside != home_rinkside),
         DZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside == home_rinkside),
         NZS = sum(event_type == "FACEOFF" & event_rinkside == "N"),
@@ -2546,18 +2708,18 @@ st.sum_skater <- function(x, venue) {
         SA = sum(event_type %in% st.shot_events & event_team == away_team),
         GF = sum(event_type == "GOAL" & event_team == home_team),
         GA = sum(event_type == "GOAL" & event_team == away_team),
-        #xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #ACF = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
-        #ACA = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
-        #AFF = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #AFA = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #ASF = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
-        #ASA = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
-        #AGF = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
-        #AGA = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
-        #AxGF = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #AxGA = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # ACF = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
+        # ACA = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
+        # AFF = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # AFA = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # ASF = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
+        # ASA = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
+        # AGF = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
+        # AGA = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
+        # AxGF = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # AxGA = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
         OZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside != home_rinkside),
         DZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside == home_rinkside),
         NZS = sum(event_type == "FACEOFF" & event_rinkside == "N"),
@@ -2622,18 +2784,18 @@ st.sum_skater <- function(x, venue) {
         SA = sum(event_type %in% st.shot_events & event_team == home_team),
         GF = sum(event_type == "GOAL" & event_team == away_team),
         GA = sum(event_type == "GOAL" & event_team == home_team),
-        #xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #ACF = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
-        #ACA = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
-        #AFF = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #AFA = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #ASF = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
-        #ASA = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
-        #AGF = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
-        #AGA = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
-        #AxGF = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #AxGA = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # ACF = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
+        # ACA = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
+        # AFF = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # AFA = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # ASF = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
+        # ASA = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
+        # AGF = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
+        # AGA = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
+        # AxGF = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # AxGA = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
         OZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside != away_rinkside),
         DZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside == away_rinkside),
         NZS = sum(event_type == "FACEOFF" & event_rinkside == "N"),
@@ -2752,18 +2914,18 @@ st.old_sum_team <- function(x, venue) {
         SA = sum(event_type %in% st.shot_events & event_team == away_team),
         GF = sum(event_type == "GOAL" & event_team == team),
         GA = sum(event_type == "GOAL" & event_team == away_team),
-        #xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
-        #xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #ACF = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == team))),
-        #ACA = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
-        #AFF = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == team))),
-        #AFA = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #ASF = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == team))),
-        #ASA = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
-        #AGF = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == team))),
-        #AGA = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
-        #AxGF = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
-        #AxGA = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
+        # xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # ACF = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == team))),
+        # ACA = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
+        # AFF = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == team))),
+        # AFA = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # ASF = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == team))),
+        # ASA = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
+        # AGF = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == team))),
+        # AGA = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
+        # AxGF = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
+        # AxGA = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
         OZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside != home_rinkside),
         DZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside == home_rinkside),
         NZS = sum(event_type == "FACEOFF" & event_rinkside == "N"),
@@ -2802,18 +2964,18 @@ st.old_sum_team <- function(x, venue) {
         SA = sum(event_type %in% st.shot_events & event_team == home_team),
         GF = sum(event_type == "GOAL" & event_team == team),
         GA = sum(event_type == "GOAL" & event_team == home_team),
-        #xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
-        #xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #ACF = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == team))),
-        #ACA = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
-        #AFF = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == team))),
-        #AFA = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #ASF = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == team))),
-        #ASA = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
-        #AGF = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == team))),
-        #AGA = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
-        #AxGF = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
-        #AxGA = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
+        # xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # ACF = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == team))),
+        # ACA = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
+        # AFF = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == team))),
+        # AFA = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # ASF = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == team))),
+        # ASA = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
+        # AGF = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == team))),
+        # AGA = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
+        # AxGF = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == team))),
+        # AxGA = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
         OZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside != home_rinkside),
         DZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside == home_rinkside),
         NZS = sum(event_type == "FACEOFF" & event_rinkside == "N"),
@@ -2868,18 +3030,18 @@ st.old_sum_skater <- function(x, venue) {
         SA = sum(event_type %in% st.shot_events & event_team == away_team),
         GF = sum(event_type == "GOAL" & event_team == home_team),
         GA = sum(event_type == "GOAL" & event_team == away_team),
-        #xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #ACF = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
-        #ACA = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
-        #AFF = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #AFA = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #ASF = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
-        #ASA = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
-        #AGF = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
-        #AGA = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
-        #AxGF = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #AxGA = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # ACF = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
+        # ACA = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
+        # AFF = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # AFA = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # ASF = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
+        # ASA = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
+        # AGF = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
+        # AGA = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
+        # AxGF = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # AxGA = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
         OZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside != home_rinkside),
         DZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside == home_rinkside),
         NZS = sum(event_type == "FACEOFF" & event_rinkside == "N"),
@@ -2932,18 +3094,18 @@ st.old_sum_skater <- function(x, venue) {
         SA = sum(event_type %in% st.shot_events & event_team == home_team),
         GF = sum(event_type == "GOAL" & event_team == away_team),
         GA = sum(event_type == "GOAL" & event_team == home_team),
-        #xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #ACF = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
-        #ACA = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
-        #AFF = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #AFA = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
-        #ASF = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
-        #ASA = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
-        #AGF = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
-        #AGA = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
-        #AxGF = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
-        #AxGA = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # xGF = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # xGA = sum(stats::na.omit(prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # ACF = sum(stats::na.omit(adj_away_corsi * (event_type %in% st.corsi_events & event_team == away_team))),
+        # ACA = sum(stats::na.omit(adj_home_corsi * (event_type %in% st.corsi_events & event_team == home_team))),
+        # AFF = sum(stats::na.omit(adj_away_fenwick * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # AFA = sum(stats::na.omit(adj_home_fenwick * (event_type %in% st.fenwick_events & event_team == home_team))),
+        # ASF = sum(stats::na.omit(adj_away_shot * (event_type %in% st.shot_events & event_team == away_team))),
+        # ASA = sum(stats::na.omit(adj_home_shot * (event_type %in% st.shot_events & event_team == home_team))),
+        # AGF = sum(stats::na.omit(adj_away_goal * (event_type == "GOAL" & event_team == away_team))),
+        # AGA = sum(stats::na.omit(adj_home_goal * (event_type == "GOAL" & event_team == home_team))),
+        # AxGF = sum(stats::na.omit(adj_away_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == away_team))),
+        # AxGA = sum(stats::na.omit(adj_home_goal * prob_goal * (event_type %in% st.fenwick_events & event_team == home_team))),
         OZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside != away_rinkside),
         DZS = sum(event_type == "FACEOFF" & event_rinkside %in% c("L", "R") & event_rinkside == away_rinkside),
         NZS = sum(event_type == "FACEOFF" & event_rinkside == "N"),
@@ -3149,7 +3311,6 @@ dcapply <- function(x, fun, combine, cores, ...) {
     combined <- do.call(combine, list)
 
     parallel::stopCluster(cl)
-
   } else {
     list <- lapply(x, fun, ...)
 
@@ -3226,42 +3387,49 @@ ftable2df <- function(mydata) {
 #'
 #' @return Integer number of games scraped
 #' @export
-ds.compile_all_games<- function(seasons=c("20172018"), games = ds.get_all_games(), data_dir = "./data", pause = 2, try_tolerance = 5){
-  p<-dplyr::progress_estimated(length(seasons)*length(games), min_time = 10)
-  gs<-0
-  for (season in seasons){
-    if(season == "20042005"){
-      for(i in 1:length(games)){
+ds.compile_all_games <- function(seasons = c("20172018"), games = ds.get_all_games(), data_dir = "./data", pause = 2, try_tolerance = 5) {
+  p <- dplyr::progress_estimated(length(seasons) * length(games), min_time = 10)
+  gs <- 0
+  for (season in seasons) {
+    if (season == "20042005") {
+      for (i in 1:length(games)) {
         p$tick()
       }
       p$print()
       next
     }
-    ddir<-file.path(data_dir, substring(season, 5, 8))
-    if(!file.exists(ddir)){
+    ddir <- file.path(data_dir, substring(season, 5, 8))
+    if (!file.exists(ddir)) {
       dir.create(ddir, recursive = TRUE)
     }
-    gms<-games
-    if(as.numeric(substring(season, 5, 8)) < 2018)
+    gms <- games
+    if (as.numeric(substring(season, 5, 8)) < 2018) {
       gms[!(gms %in% 21231:21271)]
-    if(season == "20122013"){
+    }
+    if (season == "20122013") {
       gms[!(gms %in% 20721:21271)]
     }
-    for (game in gms){
-      tryCatch({pbp_list <- ds.compile_games(
-        games = game,
-        season = season,
-        pause = pause,
-        try_tolerance = try_tolerance,
-        agents =hockeyR::ds.get_user_agents()
+    for (game in gms) {
+      tryCatch({
+        pbp_list <- ds.compile_games(
+          games = game,
+          season = season,
+          pause = pause,
+          try_tolerance = try_tolerance,
+          agents = hockeyR::ds.get_user_agents()
+        )
+        pbp_df <- pbp_list[[1]]
+        readr::write_delim(pbp_df, file.path(ddir, as.character(game)), delim = "|")
+        gs <- gs + 1
+      },
+      error = function(e) {
+        message("Error : ", game, ", ", e)
+        cat(paste0(game, ", "), file = file.path(ddir, "errors.csv"), append = TRUE)
+      }
       )
-      pbp_df <- pbp_list[[1]]
-      readr::write_delim(pbp_df, file.path(ddir, as.character(game)), delim = "|")
-      gs<-gs+1},
-      error = function(e) {message("Error : ", game, ', ', e); cat(paste0(game, ", "), file=file.path(ddir, 'errors.csv'), append = TRUE)})
 
       p$tick()$print()
-      if((as.integer(game) %% 100) == 0){
+      if ((as.integer(game) %% 100) == 0) {
         gc(verbose = FALSE)
         p$pause(60)
       }
