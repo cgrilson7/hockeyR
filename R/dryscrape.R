@@ -3435,6 +3435,8 @@ ds.compile_all_games <- function(seasons = c("20172018"), games = ds.get_all_gam
     }
     if (season == "20122013") {
       gms[!(gms %in% 20721:21271)]
+    } else if (season == "20082009"){
+      gms[!(gms %in% c(20259,20409,21077))]
     }
     for (game in gms) {
       tryCatch({
@@ -3445,8 +3447,9 @@ ds.compile_all_games <- function(seasons = c("20172018"), games = ds.get_all_gam
           try_tolerance = try_tolerance,
           agents = hockeyR::ds.get_user_agents()
         )
-        pbp_df <- pbp_list[[1]]
-        readr::write_delim(pbp_df, file.path(ddir, as.character(game)), delim = "|")
+        readr::write_delim(pbp_list[[1]], file.path(ddir, paste0(as.character(game), ".pbp")), delim = "|")
+        readr::write_delim(pbp_list[[2]], file.path(ddir, paste0(as.character(game), ".roster")), delim = "|")
+        readr::write_delim(pbp_list[[3]], file.path(ddir, paste0(as.character(game), ".shifts")), delim = "|")
         gs <- gs + 1
       },
       error = function(e) {
