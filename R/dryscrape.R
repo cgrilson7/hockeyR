@@ -221,8 +221,8 @@ ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, age
 
     return(raw_json)
   } else if (tolower(source) == "pbp") {
-    shift_pbp <- ds.get_pbp(season_, game_id_, try_tolerance, agents)
-    roster <- ds.parse_roster(ds.get_roster(season_, game_id_, try_tolerance, agents))
+    shift_pbp <- ds.get_pbp(season, game_id, try_tolerance, agents)
+    roster <- ds.parse_roster(ds.get_roster(season, game_id, try_tolerance, agents))
 
     shift_pbp_body <- shift_pbp[[2]]
     matrix(shift_pbp_body,
@@ -280,29 +280,45 @@ ds.get_shifts <- function(season, game_id, venue, source, try_tolerance = 3, age
       ) %>%
       data.frame() -> shift_pbp_df
 
-    shifts_df <- ds.parse_shifts_from_pbp(shift_pbp_df, roster) %>%
+    shifts_df <- ds.parse_shifts_from_pbp(shift_pbp_df = shift_pbp_df, roster = roster)
+    shifts_df %>%
       dplyr::mutate(
         game_date = NA,
-        game_id = paste0(season_, "0", game_id_),
-        season = NA,
-        session = NA,
-        player_id = NA
+        game_id = paste0(substr(season, 1,4), "0", game_id),
+        season = season,
+        session = ifelse(as.numeric(substr(game_id, 6,10)) < 30000, yes = 'R', no='P'),
+        player_id = NA,
+        home_team = home_team_,
+        away_team = away_team_,
+        venue = ifelse(team == home_team_, 'Home', 'Away')
       ) %>%
+      tidyr::unite(player_name, player_name_first, player_name_last, sep = ".", remove = FALSE) %>%
+      tidyr::unite(team_num, team, player_number, sep = "", remove = FALSE) %>%
+      dplyr::rename(game_period = shift_period) %>%
+      dplyr::rename(start_seconds = shift_start_seconds) %>%
+      dplyr::rename(end_seconds = shift_end_seconds) %>%
       dplyr::select(
+        shift_number,
+        game_period,
+        shift_start,
+        shift_end,
+        shift_duration,
+        num_first_last,
+        team,
+        venue,
         game_date,
         game_id,
         season,
         session,
-        shift_number,
-        shift_period,
-        shift_start,
-        shift_end,
-        shift_duration,
-        team,
-        player_id,
-        player_name_first,
-        player_name_last
-      )
+        home_team,
+        away_team,
+        player_name,
+        team_num,
+        start_seconds,
+        end_seconds
+      ) %>%
+      data.frame() ->
+      shifts_df
 
     return(shifts_df)
   }
@@ -1062,7 +1078,8 @@ ds.parse_shifts_from_pbp <- function(shift_pbp_df, roster) {
     shift_length = numeric(),
     team = character(),
     player_name_first = character(),
-    player_name_last = character()
+    player_name_last = character(),
+    player_number = integer()
   )
   shift_number <- 0
 
@@ -1115,7 +1132,8 @@ ds.parse_shifts_from_pbp <- function(shift_pbp_df, roster) {
       shifts$team <- player$team
       shifts$player_name_first <- player$first_name
       shifts$player_name_last <- player$last_name
-
+      shifts$player_number <- player$player_number
+      shifts$num_first_last <- player$num_first_last
       all_shifts <- rbind(all_shifts, shifts)
     }
   }
@@ -1430,52 +1448,54 @@ ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents = hockeyR:
     if (is.null(coordinates_df) == TRUE | nrow(dupe_check) > 0) {
       coordinates_df <- ds.get_coordinates(season_, game_id_, source = "nhl", date = game_date_, away_team = away_team_, try_tolerance, agents)
 
-      coordinates_df %>%
-        dplyr::rename(
-          time = period_time_elapsed,
-          xcoord = coords_x,
-          ycoord = coords_y,
-          period = game_period,
-          description = event_description
-        ) %>%
-        dplyr::mutate(
-          event_code = NA,
-          seconds = 1200 * (nabs(period) - 1) + ds.seconds_from_ms(time),
-          event_type = as.character(event_type)
-        ) %>%
-        dplyr::select(
-          event_code,
-          xcoord,
-          ycoord,
-          time,
-          period,
-          description,
-          event_type,
-          seconds
-        ) %>%
-        data.frame() ->
-      coordinates_df
+      if(is.data.frame(coordinates_df)){
+        coordinates_df %>%
+          dplyr::rename(
+            time = period_time_elapsed,
+            xcoord = coords_x,
+            ycoord = coords_y,
+            period = game_period,
+            description = event_description
+          ) %>%
+          dplyr::mutate(
+            event_code = NA,
+            seconds = 1200 * (nabs(period) - 1) + ds.seconds_from_ms(time),
+            event_type = as.character(event_type)
+          ) %>%
+          dplyr::select(
+            event_code,
+            xcoord,
+            ycoord,
+            time,
+            period,
+            description,
+            event_type,
+            seconds
+          ) %>%
+          data.frame() ->
+        coordinates_df
 
-      coordinates_df$event_type[which(coordinates_df$event_type == "MISSED_SHOT")] <- "MISS"
-      coordinates_df$event_type[which(coordinates_df$event_type == "BLOCKED_SHOT")] <- "BLOCK"
-      coordinates_df$event_type[which(coordinates_df$event_type == "FACEOFF")] <- "FAC"
-      coordinates_df$event_type[which(coordinates_df$event_type == "GIVEAWAY")] <- "GIVE"
-      coordinates_df$event_type[which(coordinates_df$event_type == "TAKEAWAY")] <- "TAKE"
-      coordinates_df$event_type[which(coordinates_df$event_type == "PENALTY")] <- "PENL"
+        coordinates_df$event_type[which(coordinates_df$event_type == "MISSED_SHOT")] <- "MISS"
+        coordinates_df$event_type[which(coordinates_df$event_type == "BLOCKED_SHOT")] <- "BLOCK"
+        coordinates_df$event_type[which(coordinates_df$event_type == "FACEOFF")] <- "FAC"
+        coordinates_df$event_type[which(coordinates_df$event_type == "GIVEAWAY")] <- "GIVE"
+        coordinates_df$event_type[which(coordinates_df$event_type == "TAKEAWAY")] <- "TAKE"
+        coordinates_df$event_type[which(coordinates_df$event_type == "PENALTY")] <- "PENL"
 
-      coordinates_df %>%
-        dplyr::filter(
-          nabs(period) < 5,
-          event_type == "GOAL"
-        ) %>%
-        dplyr::group_by(seconds) %>%
-        dplyr::summarise(dupes = n()) %>%
-        dplyr::filter(dupes > 1) %>%
-        data.frame() ->
-      dupe_check
+        coordinates_df %>%
+          dplyr::filter(
+            nabs(period) < 5,
+            event_type == "GOAL"
+          ) %>%
+          dplyr::group_by(seconds) %>%
+          dplyr::summarise(dupes = n()) %>%
+          dplyr::filter(dupes > 1) %>%
+          data.frame() ->
+        dupe_check
 
-      if (nrow(dupe_check) > 0) {
-        coordinates_df <- NULL
+        if (nrow(dupe_check) > 0) {
+          coordinates_df <- NULL
+        }
       }
     }
 
@@ -1894,8 +1914,10 @@ ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents = hockeyR:
         data.frame() ->
       shifts_df
     } else {
-      shifts_df <- ds.get_shifts(season_, game_id_, venue = NULL, source = "pbp", try_tolerance, agents)
-      roster_df <- ds.parse_roster(ds.get_roster(season_, game_id_, try_tolerance, agents))
+      shifts_df <- ds.get_shifts(season = season_, game_id = game_id_, venue = NULL, source = "pbp", try_tolerance = try_tolerance, agents = agents)
+      shifts_df$game_date <- game_date_
+
+      roster_df <- ds.parse_roster(ds.get_roster(season = season_, game_id = game_id_, try_tolerance = try_tolerance, agents = agents))
       roster_df %>%
         tidyr::unite(player_name, first_name, last_name, sep = ".", remove = FALSE) %>%
         tidyr::unite(name_match, first_name, last_name, sep = "", remove = FALSE) %>%
@@ -1907,7 +1929,7 @@ ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents = hockeyR:
           season = as.character(season_),
           session = session_
         ) %>%
-        tidyr::unite(team_num, team, player_num, sep = "", remove = FALSE) %>%
+        tidyr::unite(team_num, team, player_number, sep = "", remove = FALSE) %>%
         dplyr::select(
           team_name,
           team,
@@ -1963,7 +1985,7 @@ ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents = hockeyR:
     }
   }
 
-  if (!is.null(coordinates_df)) {
+  if (!is.null(coordinates_df) & is.data.frame(coordinates_df)) {
     coordinates_df %>%
       dplyr::mutate(
         game_date = game_date_,
@@ -2088,7 +2110,7 @@ ds.compile_games <- function(games, season, pause = 1, try_tolerance = 3,
     new_pbp
   }
 
-  if (!is.null(coords)) {
+  if (!is.null(coords) && is.data.frame(coords)) {
     dplyr::left_join(new_pbp,
       coords %>%
         dplyr::rename(
