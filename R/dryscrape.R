@@ -910,20 +910,24 @@ ds.parse_player <- function(x) {
 #' @return a data frame of the rosters
 #' @keywords internal
 ds.parse_roster <- function(roster) {
-  roster_lists_starts <- grep(pattern = "^#\\r\\nPos\\r\\nName\\r\\n$", x = roster)
+  roster_lists <- grep(pattern = "^#\\r\\nPos\\r\\nName\\r\\n$", x = roster)
   scratches_starts <- grep(pattern = "^Scratches", x = roster)
-  roster_lists <- roster_lists_starts[roster_lists_starts < scratches_starts]
+  if(length(scratches_starts) != 0){
+    roster_lists <- roster_lists[roster_lists < scratches_starts]
+  } else {
+    scratches_starts<-grep(pattern = "^Head Coaches", x = roster)
+  }
   away_list <- roster[c((roster_lists[1] + 1):(roster_lists[2] - 1))]
   home_list <- roster[c((roster_lists[2] + 1):(scratches_starts - 2))]
   away_roster <- as.data.frame(
-    stringr::str_match(away_list, pattern = "([0-9]+)\r\n([A-Z])\r\n([A-Z\\-\\.]+)\\s([A-Z\\-\\.\\s]+)(?:\\([C|A]\\))?\r\n")[, 2:5],
+    stringr::str_match(away_list, pattern = "([0-9]+)\r\n([A-Z])\r\n([A-Z\\-\\.\\']+)\\s([A-Z\\-\\.\\s\\']+)(?:\\([C|A]\\))?\r\n")[, 2:5],
     stringsAsFactors = FALSE
   )
   colnames(away_roster) <- c("player_number", "player_position", "first_name", "last_name")
   away_roster$last_name <- as.character(trimws(away_roster$last_name))
   away_roster$venue <- "Away"
   home_roster <- as.data.frame(
-    stringr::str_match(home_list, pattern = "([0-9]+)\r\n([A-Z])\r\n([A-Z\\-\\.]+)\\s([A-Z\\-\\.\\s]+)(?:\\([C|A]\\))?\r\n")[, 2:5],
+    stringr::str_match(home_list, pattern = "([0-9]+)\r\n([A-Z])\r\n([A-Z\\-\\.\\']+)\\s([A-Z\\-\\.\\s\\']+)(?:\\([C|A]\\))?\r\n")[, 2:5],
     stringsAsFactors = FALSE
   )
   colnames(home_roster) <- c("player_number", "player_position", "first_name", "last_name")
@@ -1082,6 +1086,7 @@ ds.parse_shifts_from_pbp <- function(shift_pbp_df, roster) {
     player_number = integer()
   )
   shift_number <- 0
+  shift_pbp_df[nrow(shift_pbp_df)+1, ]<-c(rep(NA))
 
   shift_pbp_df[1, c("h1", "h2", "h3", "h4", "h5", "h6", "a1", "a2", "a3", "a4", "a5", "a6")] <- NA
 
@@ -1106,7 +1111,7 @@ ds.parse_shifts_from_pbp <- function(shift_pbp_df, roster) {
       stringsAsFactors = FALSE
     )
 
-    for (i in 1:(nrow(shift_pbp_df) - 1)) {
+    for (i in 1:nrow(shift_pbp_df)) {
       if (player_num %in% shift_pbp_df[i, pcol]) {
         if (player_num %in% shift_pbp_df[i - 1, pcol] &&
           player_num %in% shift_pbp_df[i + 1, pcol]) {
@@ -1736,7 +1741,7 @@ ds.scrape_game <- function(season, game_id, try_tolerance = 3, agents = hockeyR:
       cores = 1
     )
 
-    if (!is.null(shifts_df)) {
+    if (!is.null(shifts_df) | shifts[[2]] != 0) {
       shifts_df %>%
         dplyr::mutate(
           game_date = game_date_,
