@@ -2092,7 +2092,7 @@ ds.compile_games <- function(games, season, pause = 1, try_tolerance = 3,
       data.frame()
   ) -> shift_summary
 
-  if (!is.null(highlights)) {
+  if (!is.null(highlights) & sum(complete.cases(highlights)) > 0) {
     highlights$event_match <- ifelse(highlights$event_type == 505,
       "GOAL",
       "SHOT"
