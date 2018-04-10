@@ -2092,7 +2092,12 @@ ds.compile_games <- function(games, season, pause = 1, try_tolerance = 3,
       data.frame()
   ) -> shift_summary
 
-  if (!is.null(highlights) & sum(complete.cases(highlights)) > 0) {
+  if (is.data.frame(highlights)){
+    if(sum(complete.cases(highlights)) == 0){
+      highlights <- NULL
+    }
+  }
+  if (!is.null(highlights)) {
     highlights$event_match <- ifelse(highlights$event_type == 505,
       "GOAL",
       "SHOT"
@@ -3431,12 +3436,12 @@ ds.compile_all_games <- function(seasons = c("20172018"), games = ds.get_all_gam
     }
     gms <- games
     if (as.numeric(substring(season, 5, 8)) < 2018) {
-      gms[!(gms %in% 21231:21271)]
+      gms <- gms[!(gms %in% 21231:21271)]
     }
     if (season == "20122013") {
-      gms[!(gms %in% 20721:21271)]
+      gms <- gms[!(gms %in% 20721:21271)]
     } else if (season == "20082009"){
-      gms[!(gms %in% c(20259,20409,21077))]
+      gms <- gms[!(gms %in% c(20259,20409,21077))]
     }
     for (game in gms) {
       tryCatch({

@@ -1,21 +1,10 @@
-Fail:
-future games
-(JSON):   "gameData" : {
-    "game" : {
-      "pk" : 2017021270,
-      "season" : "20172018",
-      "type" : "R"
-    },
-    "datetime" : {
-      "dateTime" : "2018-04-08T02:30:00Z"
-    },
-    "status" : {
-      "abstractGameState" : "Preview",
-      "codedGameState" : "1",
-      "detailedState" : "Scheduled",
-      "statusCode" : "1",
-      "startTimeTBD" : false
-      }
-      }
 
-Generate roster/shifts for games that fail to download real rosters.
+PBP: http://www.nhl.com/scores/htmlreports/20082009/PL020259.HTM
+ROS: http://www.nhl.com/scores/htmlreports/20082009/RO020259.HTM
+BOX: http://www.nhl.com/scores/htmlreports/20082009/ES020259.HTM
+HOME SHFIT: http://www.nhl.com/scores/htmlreports/20082009/TH020259.HTM
+AWAY SHIFT: http://www.nhl.com/scores/htmlreports/20082009/TV020259.HTM
+jsonshift: http://www.nhl.com/stats/rest/shiftcharts?cayenneExp=gameId=2008020259
+
+
+
