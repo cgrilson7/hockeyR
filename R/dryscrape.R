@@ -3434,16 +3434,18 @@ ds.compile_all_games <- function(seasons = c("20172018"), games = ds.get_all_gam
     if (!file.exists(ddir)) {
       dir.create(ddir, recursive = TRUE)
     }
-    gms <- games
-    if (as.numeric(substring(season, 5, 8)) < 2018) {
-      gms <- gms[!(gms %in% 21231:21271)]
-    }
-    if (season == "20122013") {
-      gms <- gms[!(gms %in% 20721:21271)]
-    } else if (season == "20082009"){
-      gms <- gms[!(gms %in% c(20259,20409,21077))]
-    }
-    for (game in gms) {
+
+    for (game in games) {
+      if ((as.numeric(substring(season, 5, 8)) < 2018) & (game %in% 21231:21271)) { #20172018 added VGK, more games
+        p$tick()$print()
+        next
+      } else if ((season == "20122013") & (game %in% 20721:21230)) {  #lockout shortened season
+        p$tick()$print()
+        next
+      } else if ((season == "20082009") & games %in% c(20259, 20409, 21077)){  #errors in games on websites. will maybe fix later?
+        p$tick()$print()
+        next
+      }
       tryCatch({
         pbp_list <- ds.compile_games(
           games = game,
