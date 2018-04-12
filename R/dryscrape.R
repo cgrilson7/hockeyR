@@ -3409,6 +3409,28 @@ ftable2df <- function(mydata) {
   cbind(dfrows, dfcols)
 }
 
+#' Merge Season Files
+#' @description Merge season files in a directory, looking for .roster, .shifts or .pbp files to merge. Will leak readr::read_delim and dplyr::bind_rows errors.
+#'
+#' @param season_dir The directory of the season to merge
+#' @param what What to merge. One or more of `roster`, `shifts`, or `pbp`.
+#'
+#' @export
+ds.merge_season<-function(season_dir, what=c('roster','shifts','pbp')){
+  coltype<-list(roster = 'ccccDiicicccccc', shifts = 'iicctcccDiicccccdd', pbp= 'iiDciidccccccciiiccccccccccccccccciiiiccc')
+  what <- what[what %in% c('roster','shifts','pbp')]
+  for (w in what){
+    cat("Parsing", w)
+    f<-list.files(path = season_dir, pattern = w, full.names = TRUE)
+    if(length(w) > 0)
+      season <- f %>%
+      lapply(function(x) readr::read_delim(x, delim = "|", col_types = coltype[[w]], progress = FALSE)) %>%
+      bind_rows() %>%
+      readr::write_delim(path = paste0(season_dir, "/compiled.", w), delim = "|")
+    cat("\r")
+  }
+}
+
 #' Scrape & compile & savel all (or subset of) games in a season range. Saves a file in season dir with all unscraped games. All seasons scraping the same game
 #'
 #' @param seasons The season(s) to scrape. Will automatically skip 20042005 and shorten 20122013 and carry longer seasons 20172018++
@@ -3472,5 +3494,6 @@ ds.compile_all_games <- function(seasons = c("20172018"), games = ds.get_all_gam
       }
     }
   }
+  cat('\n')
   return(gs)
 }
