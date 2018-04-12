@@ -3422,11 +3422,12 @@ ds.merge_season<-function(season_dir, what=c('roster','shifts','pbp')){
   for (w in what){
     cat("Parsing", w)
     f<-list.files(path = season_dir, pattern = w, full.names = TRUE)
-    if(length(w) > 0)
-      season <- f %>%
-      lapply(function(x) readr::read_delim(x, delim = "|", col_types = coltype[[w]], progress = FALSE)) %>%
-      bind_rows() %>%
-      readr::write_delim(path = paste0(season_dir, "/compiled.", w), delim = "|")
+    if(length(w) > 0){
+      f %>%
+        lapply(function(x) readr::read_delim(x, delim = "|", col_types = coltype[[w]], progress = FALSE)) %>%
+        bind_rows() %>%
+        readr::write_delim(path = paste0(season_dir, "/compiled.", w), delim = "|")
+    }
     cat("\r")
   }
 }
