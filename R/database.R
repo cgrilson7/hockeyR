@@ -7,10 +7,24 @@
 #'
 #' @export
 db.merge_season_to_db<-function(season_dir, con, what=c('roster','shifts','pbp')){
-  coltype<-list(roster = 'ccccDiicicccccc', shifts = 'iiccccccDiicccccdd', pbp= 'iiDciidccccccciiiccccccccccccccccciiiiccc')
-  colrequired<-list(roster = c(''),
-                    shifts = c(''),
-                    pbp = c(''))
+  coltype<-list(roster = 'ccccciicicccccc', shifts = 'iiccccccciicccccdd', pbp= 'iicciidccccccciiiccccccccccccccccciiiiccc')
+  colrequired<-list(roster = c("team_name", "team", "venue", "num_first_last", "game_date",
+                               "game_id", "season", "session", "player_number", "team_num",
+                               "first_name", "last_name", "player_name", "name_match", "player_position"),
+                    shifts = c("shift_number", "game_period", "shift_start", "shift_end",
+                               "shift_duration", "num_first_last", "team", "venue", "game_date",
+                               "game_id", "season", "session", "home_team", "away_team", "player_name",
+                               "team_num", "start_seconds", "end_seconds"),
+                    pbp = c("season", "game_id", "game_date", "session", "event_index",
+                            "game_period", "game_seconds", "event_type", "event_description",
+                            "event_detail", "event_team", "event_player_1", "event_player_2",
+                            "event_player_3", "event_length", "coords_x", "coords_y", "players_substituted",
+                            "home_on_1", "home_on_2", "home_on_3", "home_on_4", "home_on_5",
+                            "home_on_6", "away_on_1", "away_on_2", "away_on_3", "away_on_4",
+                            "away_on_5", "away_on_6", "home_goalie", "away_goalie", "home_team",
+                            "away_team", "home_skaters", "away_skaters", "home_score", "away_score",
+                            "game_score_state", "game_strength_state", "highlight_code")
+  )
   what <- what[what %in% c('roster','shifts','pbp')]
   for (w in what){
     cat("Parsing", w, "   ")
@@ -21,11 +35,11 @@ db.merge_season_to_db<-function(season_dir, con, what=c('roster','shifts','pbp')
     if(!dplyr::db_has_table(con, w)){
       stop('Table ', w, ' does not exist in the database. Please create table with db.create_table() before adding data.')
     }
-    for (f in files)
+    for (f in files){
       game_data<-readr::read_delim(f, delim='|', col_types = coltype[[w]])
-      if (all(colnames(data) %in% colrequired[[w]])){
-        dplyr::db_write_into(con, w, game_data)
-      }
+      game_data <- game_data[colnames(game_data) %in% colrequired[[w]], ]
+      dplyr::db_write_into(con, w, game_data)
+    }
     cat("\r")
   }
 }
@@ -62,7 +76,7 @@ db.create_table<-function(con, what=c('roster','shifts','pbp')){
       team = character(),
       venue = character(),
       num_first_last = character(),
-      game_date = date(),
+      game_date = character(),
       game_id = integer(),
       season = integer(),
       session = character(),
@@ -83,7 +97,7 @@ db.create_table<-function(con, what=c('roster','shifts','pbp')){
       num_first_last = character(),
       team = character(),
       venue = character(),
-      game_date = date(),
+      game_date = character(),
       game_id = integer(),
       season = integer(),
       session = character(),
@@ -97,7 +111,7 @@ db.create_table<-function(con, what=c('roster','shifts','pbp')){
     pbp = data.frame(
       season = integer(),
       game_id = integer(),
-      game_date = date(format = ""),
+      game_date = character(),
       session = character(),
       event_index = integer(),
       game_period = integer(),
