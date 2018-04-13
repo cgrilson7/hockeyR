@@ -3417,10 +3417,10 @@ ftable2df <- function(mydata) {
 #'
 #' @export
 ds.merge_season<-function(season_dir, what=c('roster','shifts','pbp')){
-  coltype<-list(roster = 'ccccDiicicccccc', shifts = 'iicctcccDiicccccdd', pbp= 'iiDciidccccccciiiccccccccccccccccciiiiccc')
+  coltype<-list(roster = 'ccccDiicicccccc', shifts = 'iiccccccDiicccccdd', pbp= 'iiDciidccccccciiiccccccccccccccccciiiiccc')
   what <- what[what %in% c('roster','shifts','pbp')]
   for (w in what){
-    cat("Parsing", w)
+    cat("Parsing", w, "   ")
     f<-list.files(path = season_dir, pattern = w, full.names = TRUE)
     if(length(w) > 0){
       f %>%
