@@ -7,8 +7,10 @@
 # All credit to him for creation of the script and can found at github.com/mannyelk #
 # DRYSCRAPE # Last edit: Manny (2017-07-02)
 # Description Dryscrape contains all functions and tools related to scraping data for Corsica
+#' Attribution statement
+#' @export
 ds.attribution <- function() {
-  message("# Manny's HTM scrape - 09//15//17 \n# This code was written by Emmanuel Perry of @mannyelk on twitter and creator of corsica.hockey.\n# All credit to him for creation of the script and can found at github.com/mannyelk \n# DRYSCRAPE # Last edit: Manny (2017-07-02)\n# Description Dryscrape contains all functions and tools related to scraping data for Corsica")
+  return("# Manny's HTM scrape - 09//15//17 \n# This code was written by Emmanuel Perry of @mannyelk on twitter and creator of corsica.hockey.\n# All credit to him for creation of the script and can found at github.com/mannyelk \n# DRYSCRAPE # Last edit: Manny (2017-07-02)\n# Description Dryscrape contains all functions and tools related to scraping data for Corsica")
 }
 
 
@@ -3247,16 +3249,18 @@ nabs <- function(x) {
 #' @export
 log_loss <- function(act, pred, allow_inf = FALSE) {
   eps <- as.numeric(!allow_inf) * 1e-15
+  
+  rows <- ifelse(is.null(nrow(pred)), length(pred), nrow(pred))
 
   pred <- matrix(sapply(pred, function(x) max(eps, x)),
-    nrow = nrow(pred)
+    nrow = rows
   )
   pred <- matrix(sapply(pred, function(x) min(1 - eps, x)),
-    nrow = nrow(pred)
+    nrow = rows
   )
 
   ll <- sum(act * log(pred) + (1 - act) * log(1 - pred))
-  ll <- -ll / (nrow(act))
+  ll <- -ll / (rows)
 
   return(ll)
 }
