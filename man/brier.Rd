@@ -12,7 +12,7 @@ brier(act, pred)
 \item{pred}{predicted result(s)}
 }
 \value{
-the brier score for this data or series of data
+the Brier score for this data or series of data
 }
 \description{
 brier() returns the Brier score obtained from a given prediction and known result

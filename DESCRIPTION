@@ -20,7 +20,8 @@ Imports: RCurl,
     xml2,
     readr,
     tidyr,
-    stringr
+    stringr,
+    RPostgreSQL
 Suggests: knitr,
     rmarkdown,
     testthat

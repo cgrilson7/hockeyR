@@ -3297,7 +3297,7 @@ moving <- function(x, n = 5) {
 #' @param act actual result(s)
 #' @param pred predicted result(s)
 #'
-#' @return the brier score for this data or series of data
+#' @return the Brier score for this data or series of data
 #' @export
 brier <- function(act, pred) {
   bri <- sum((act - pred)^2) / length(act)

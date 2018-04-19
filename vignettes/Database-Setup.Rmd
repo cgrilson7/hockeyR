@@ -1,0 +1,46 @@
+---
+title: "Vignette Title"
+author: "Philip Bulsink"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+Setting up the database for initial data import must be done before beginning to add the data collected by `ds.compile_all_games()`. This vignette will assist in setting up PostgreSQL tables ready to accept the data.
+
+# Installing PostgreSQL
+Many examples and tutorials exist online for installing PostgreSQL, available with a simple Google search. One related to hockey analysis can be found [here](http://barloweanalytics.com/sqlstart.html), written by Matt Barlowe. If you follow the instructions listed there up until the 'Importing Data to the Database' section, you should be well set up.
+
+# Adding Tables
+With the database pepared we can begin to add tables in which the data is stored. To add a table, each column must be named and provided with a data type. This can be done in a command as below, for the pbp table: 
+
+```{sql pbp, eval=FALSE}
+CREATE TABLE pbp();
+```
+
+This command will run, and `CREATE TABLE` will print out if it is successful. We can check that the table has been added by searching for it in the output of the command `\dt`. More information on that table can be seen by typing `\d+ pbp`.
+
+The other tables we'll start with are rosters, shifts, teams, and players. 
+```{sql other_tables, eval=FALSE}
+
+```
+
+As you calculate other statistics you can add more tables or add columns to these existing tables. Table operations should be performed before adding data to the tables. 
+
+For example, to add a column for metric player weight to the players table, we could execute that command like this:
+```{sql add_column, eval=FALSE}
+ALTER TABLE players ADD COLUMN metric_weight varchar;
+```
+
+
