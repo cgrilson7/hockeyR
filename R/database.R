@@ -29,16 +29,16 @@ db.merge_season_to_db<-function(season_dir, con, what=c('roster','shifts','pbp')
   for (w in what){
     cat("Parsing", w, "   ")
     files<-list.files(path = season_dir, pattern = w, full.names = TRUE)
-    if(length(f) == 0){
+    if(length(files) == 0){
       stop('No files of type ', w, ' to import from ', season_dir, '.')
     }
-    if(!dplyr::db_has_table(con, w)){
+    if(!RPostgreSQL::dbExistsTable(con, w)){
       stop('Table ', w, ' does not exist in the database. Please create table with db.create_table() before adding data.')
     }
     for (f in files){
       game_data<-readr::read_delim(f, delim='|', col_types = coltype[[w]])
       game_data <- game_data[colnames(game_data) %in% colrequired[[w]], ]
-      dplyr::db_write_into(con, w, game_data)
+      RPostgreSQL::dbWriteTable(con, w, game_data, append=TRUE, row.names = FALSE)
     }
     cat("\r")
   }
@@ -69,7 +69,7 @@ db.get_db_connection<-function(user='hockey', password='analytic', dbname = 'hoc
 #' @export
 #'
 #' @examples
-db.create_table<-function(con, what=c('roster','shifts','pbp')){
+db.create_table<-function(con, what=c('roster','shifts','pbp', 'players', 'teams')){
   empty_df<-list(
     roster = data.frame(
       team_name = character(),
@@ -86,7 +86,8 @@ db.create_table<-function(con, what=c('roster','shifts','pbp')){
       last_name = character(),
       player_name = character(),
       name_match = character(),
-      player_position = character()
+      player_position = character(),
+      stringsAsFactors = FALSE
     ),
     shifts = data.frame(
       shift_number = integer(),
@@ -106,7 +107,8 @@ db.create_table<-function(con, what=c('roster','shifts','pbp')){
       player_name = character(),
       team_num = character(),
       start_seconds = integer(),
-      end_seconds = integer()
+      end_seconds = integer(),
+      stringsAsFactors = FALSE
     ),
     pbp = data.frame(
       season = integer(),
@@ -149,11 +151,45 @@ db.create_table<-function(con, what=c('roster','shifts','pbp')){
       away_score = integer(),
       game_score_state = character(),
       game_strength_state = character(),
-      highlight_code = integer()
+      highlight_code = integer(),
+      stringsAsFactors = FALSE
+    ),
+    players <- data.frame(
+      player_id = integer(),
+      player_name_first = character(),
+      player_name_last = character(),
+      player_name_full = character(),
+      player_jerseynum = integer(),
+      player_position = character(),
+      player_birth_date = character(),
+      player_birth_city = character(),
+      player_birth_country = character(),
+      player_nationality = character(),
+      player_height = character(),
+      player_weight = numeric(),
+      player_handedness = character(),
+      is_active = character(),
+      is_rookie = character(),
+      stringsAsFactors = FALSE
+    ),
+    teams <- data.frame(
+      team_id = integer(),
+      team_name = character(),
+      team_alias= character(),
+      team_venue = character(),
+      team_location = character(),
+      team_city = character(),
+      team_division_id = integer(),
+      team_division_name = character(),
+      team_conference_id = integer(),
+      team_conference_name = character(),
+      franchise_id = character(),
+      is_active = character(),
+      stringsAsFactors = FALSE
     )
   )
   for (w in what){
-    if(dplyr::db_has_table(con, w)){
+    if(RPostgreSQL::dbExistsTable(con, w)){
       stop('Table ', w, ' already exists in database.')
     }
     RPostgreSQL::dbGetQuery(con,
