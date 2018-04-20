@@ -20,20 +20,26 @@ knitr::opts_chunk$set(
 Setting up the database for initial data import must be done before beginning to add the data collected by `ds.compile_all_games()`. This vignette will assist in setting up PostgreSQL tables ready to accept the data.
 
 # Installing PostgreSQL
-Many examples and tutorials exist online for installing PostgreSQL, available with a simple Google search. One related to hockey analysis can be found [here](http://barloweanalytics.com/sqlstart.html), written by Matt Barlowe. If you follow the instructions listed there up until the 'Importing Data to the Database' section, you should be well set up.
+Many examples and tutorials exist online for installing PostgreSQL, available with a simple Google search. One related to hockey analysis can be found [here](http://barloweanalytics.com/sqlstart.html), written by Matt Barlowe. If you follow the instructions listed there up until the 'Importing Data to the Database' section, you should be well set up. I'll suggest making a user named `hockey`, with the password `analytic`, and creating a `hockeystats` database for easiest use with the provided package code. Other users, passwords, or database names can easily be supplied as arguments to any of the written functions, though.
 
 # Adding Tables
-With the database pepared we can begin to add tables in which the data is stored. To add a table, each column must be named and provided with a data type. This can be done in a command as below, for the pbp table: 
+With the database pepared we can begin to add tables in which the data is stored. To add a table, each column must be named and provided with a data type. This can be done in a command as below, for the roster table: 
 
 ```{sql pbp, eval=FALSE}
-CREATE TABLE pbp();
+CREATE TABLE roster(team_name varchar, team varchar, venue varchar, num_first_last varchar, game_date varchar, game_id integer, season integer, session varchar, player_number integer, team_num varchar, first_name varchar, last_name varchar, player_name varchar, name_match varchar, player_position varchar);
 ```
 
 This command will run, and `CREATE TABLE` will print out if it is successful. We can check that the table has been added by searching for it in the output of the command `\dt`. More information on that table can be seen by typing `\d+ pbp`.
 
-The other tables we'll start with are rosters, shifts, teams, and players. 
+The other tables we'll start with are shifts, pbp, teams, and players. 
 ```{sql other_tables, eval=FALSE}
+CREATE TABLE shifts(shift_number integer, game_period integer, shift_start varchar, shift_end varchar, shift_duration varchar, num_first_last varchar, team varchar, venue varchar, game_date varchar, game_id integer, season integer, session varchar, home_team varchar, away_team varchar, player_name varchar, team_num varchar, start_seconds real, end_seconds real);
 
+CREATE TABLE pbp(season integer, game_id integer, game_date varchar, session varchar, event_index integer, game_period integer, game_seconds real, event_type varchar, event_description varchar, event_detail varchar, event_team varchar, event_player_1 varchar, event_player_2 varchar, event_player_3 varchar, event_length integer, coords_x integer, coords_y integer, players_substituted varchar, home_on_1 varchar,home_on_2 varchar, home_on_3 varchar, home_on_4 varchar, home_on_5 varchar, home_on_6 varchar, away_on_1 varchar, away_on_2 varchar, away_on_3 varchar, away_on_4 varchar, away_on_5 varchar, away_on_6 varchar, home_goalie varchar, away_goalie varchar, home_team varchar, away_team varchar, home_skaters integer, away_skaters integer, home_score integer, away_score integer, game_score_state varchar, game_strength_state varchar, highlight_code integer);
+
+CREATE TABLE players(player_id integer, player_name_first varchar, player_name_last varchar, player_name_full varchar, player_jerseynum integer, player_position varchar, player_birth_date varchar, player_birth_city varchar, player_birth_country varchar, player_nationality varchar, player_height varchar, player_weight real, player_handedness varchar, is_active varchar, is_rookie varchar);
+
+CREATE TABLE teams(team_id integer, team_name varchar, team_alias varchar, team_venue varchar, team_location varchar, team_city varchar, team_division_id integer, team_division_name varchar, team_conference_id integer, team_conference_name varchar, franchise_id varchar, is_active varchar);
 ```
 
 As you calculate other statistics you can add more tables or add columns to these existing tables. Table operations should be performed before adding data to the tables. 
@@ -43,4 +49,12 @@ For example, to add a column for metric player weight to the players table, we c
 ALTER TABLE players ADD COLUMN metric_weight varchar;
 ```
 
+Once that column is added, you can go back to `R` to add data.
 
+# Adding Data
+There are some functions to aid in adding data you've scraped to the database. To start, you have to create a connection between `R` and the database. If your database user is `hockey`, password is `analytic` and database  name is `hockeystats` then this function needs no arguements. Otherwise, fill in the arguements by name as required.
+```{r connect}
+con <- db.get_db_connection()
+```
+
+With the connection available, you can begin to add data to the 
