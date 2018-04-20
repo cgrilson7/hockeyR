@@ -6,5 +6,7 @@ HOME SHFIT: http://www.nhl.com/scores/htmlreports/20082009/TH020259.HTM
 AWAY SHIFT: http://www.nhl.com/scores/htmlreports/20082009/TV020259.HTM
 jsonshift: http://www.nhl.com/stats/rest/shiftcharts?cayenneExp=gameId=2008020259
 
-
+teams: https://statsapi.web.nhl.com/api/v1/teams/
+players:/api/v1/people/
+schedule: /api/v1/schedule
 

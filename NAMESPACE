@@ -2,6 +2,7 @@
 
 export(brier)
 export(db.get_db_connection)
+export(db.merge_games_to_db)
 export(db.merge_season_to_db)
 export(dcapply)
 export(ds.attribution)

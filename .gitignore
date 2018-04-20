@@ -3,3 +3,5 @@
 .RData
 inst/doc
 dryscrape_data
+vignettes/*.html
+vignettes/*.R

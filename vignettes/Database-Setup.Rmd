@@ -53,8 +53,13 @@ Once that column is added, you can go back to `R` to add data.
 
 # Adding Data
 There are some functions to aid in adding data you've scraped to the database. To start, you have to create a connection between `R` and the database. If your database user is `hockey`, password is `analytic` and database  name is `hockeystats` then this function needs no arguements. Otherwise, fill in the arguements by name as required.
-```{r connect}
+```{r connect, eval=FALSE}
 con <- db.get_db_connection()
 ```
 
-With the connection available, you can begin to add data to the 
+With the connection available, you can begin to add data that has been scraped to the database. The best way to do an initial data import is with the `db.merge_season_to_db()` function. 
+```{r add_data, eval=FALSE}
+db.merge_season_to_db(season_dir = "./data/2018", con = con)
+```
+
+We can specify importing any combination of pbp, roster or shifts to the database, or leave it for the default of all three data portions. Importing single game sets can be done using the `db.merge_games_to_db()` function, with the same options beyond specifying the game to add to the database.
