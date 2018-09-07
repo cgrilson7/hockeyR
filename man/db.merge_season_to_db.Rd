@@ -4,7 +4,8 @@
 \alias{db.merge_season_to_db}
 \title{Merge Season into Database}
 \usage{
-db.merge_season_to_db(season_dir, con, what = c("roster", "shifts", "pbp"))
+db.merge_season_to_db(season_dir, con, what = c("roster", "shifts",
+  "pbp"))
 }
 \arguments{
 \item{season_dir}{Directory of the season}
@@ -14,5 +15,5 @@ db.merge_season_to_db(season_dir, con, what = c("roster", "shifts", "pbp"))
 \item{what}{Which of roster, shifts and/or pbp to collapse into the database}
 }
 \description{
-The volume of data can be too much for personal computers to store in memory. Use of a database allows analysis of everything at once. This will collapse a season into a database.Tables should be created before this. For more details see the help vignette: \code{vignette("Database-Setup", package = "hockeyR")}.
+The volume of data can be too much for personal computers to store in memory. Use of a database allows analysis of everything at once. This will collapse a season into a database. Database tables should be created before this. For more details see the help vignette: \code{vignette("Database-Setup", package = "hockeyR")}.
 }

@@ -21,9 +21,10 @@ Imports: RCurl,
     readr,
     tidyr,
     stringr,
-    RPostgreSQL
+    RPostgreSQL,
+    pROC
 Suggests: knitr,
     rmarkdown,
     testthat
 VignetteBuilder: knitr
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0

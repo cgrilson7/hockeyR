@@ -11,7 +11,17 @@ xg.attribution <- function() {
   return("# This code was written by Matthew Barlowe of @matt_barlowe on Twitter.\n# All credit to him for creation of the script which can found at https://github.com/mcbarlowe/xGmodel \n# Last edit: Matt (2018-01-14) \n# Description: XGoals produce an introductory expected goals model. ")
 }
 
-xg.train_model <- function(data_dir = "./data", train_season = c(2016:2017), test_season = c(2018)) {
+#' Train xG model
+#'
+#' @param data_dir the data directory with compiled .pbp files in season subfolders, also where to save model
+#' @param train_season vector of seasons (as season end year as integer) to use for training
+#' @param test_season vector of seasons (as season end year as integer) to use for testing
+#' @param save_model Whether to save the model to disk
+#' @param evaluate whether to evaluate the model's performance
+#'
+#' @return the xGmodel
+#' @export
+xg.train_model <- function(data_dir = "./data", train_season = c(2016:2017), test_season = c(2018), save_model = TRUE, evaluate = TRUE) {
   coltype<-'iicciidccccccciiiccccccccccccccccciiiiccc'
 
   train<-tibble::tibble()
@@ -25,28 +35,41 @@ xg.train_model <- function(data_dir = "./data", train_season = c(2016:2017), tes
   for(s in test_season){
     f<-file.path(data_dir, s, 'compiled.pbp')
     pbp<-readr::read_delim(f, delim='|', col_types = coltype)
-    train<-dplyr::bind_rows(test, pbp)
+    test<-dplyr::bind_rows(test, pbp)
   }
 
   train<-xg.prep_data(train)
 
   test<-xg.prep_data(test)
 
-  xGmodel <- glm(is_goal ~ poly(distance, 3, raw = TRUE) +
-                   poly(shot_angle, 3, raw = TRUE) + event_detail +
-                   shooter_strength +
-                   is_rebound + is_rush,
-                 data = Train_Fenwick_Data,
-                 family = binomial(link = 'logit'))
+  xGmodel <- stats::glm(is_goal ~ poly(distance, 3, raw = TRUE) +
+                        poly(shot_angle, 3, raw = TRUE) + event_detail +
+                        shooter_strength +
+                        is_rebound + is_rush,
+                        data = train,
+                        family = binomial(link = 'logit'),
+                        model = FALSE, x = FALSE, y = FALSE)
 
-  save(xGmodel, file = "xGmodel.rda")
+  xGmodel <- compress_model(xGmodel)
 
+  if(evaluate){
+    test$xG <- stats::predict(xGmodel, test, type = 'response')
+    cat("Area under the curve:", pROC::auc(pROC::roc(is_goal ~ xG, data = test)))
+  }
 
+  if(save_model){
+    save(xGmodel, file = file.path(data_dir, "xGmodel.rda"))
+    message("Model saved at ", file.path(data_dir, "xGmodel.rda", "."))
+  }
+
+  return(xGmodel)
 }
 
 xg.prep_data<-function(pbp){
+  fenwick_events <- c('SHOT', 'MISS', 'GOAL')
+
   pbp<-is_home(pbp)
-  pbp<-is_home(pbp)
+  pbp<-is_goal(pbp)
 
   pbp <- pbp %>% dplyr::group_by(game_id) %>%
     dplyr::arrange(event_index, .by_group = TRUE) %>%
@@ -70,7 +93,7 @@ xg.prep_data<-function(pbp){
 
   pbp$is_rebound[is.na(pbp$time_diff)] <- 0
   pbp$is_rush[is.na(pbp$is_rush)] <- 0
-  pbp<- filter(pbp, event_type %in% c("SHOT", "MISS", "GOAL"))
+  pbp <- filter(pbp, event_type %in% fenwick_events)
   pbp <- filter(pbp, !is.na(event_detail))
 
   pbp$event_detail<- as.factor(pbp$event_detail)
@@ -103,8 +126,6 @@ xg.prep_data<-function(pbp){
   pbp$shooter_strength <- ifelse(pbp$game_strength_state %in% c('Ev0', '0vE'), 'PS', pbp$shooter_strength)
 
   return(pbp)
-
-
 }
 
 is_home <- function(dataframe){
@@ -116,4 +137,38 @@ is_home <- function(dataframe){
 is_goal <- function(dataframe){
   dataframe$is_goal <- ifelse(dataframe$event_type == "GOAL", 1, 0)
   return(dataframe)
+}
+
+xg.by_player<-function(model, season){
+  NULL
+}
+
+xg.by_team<-function(model, season){
+  NULL
+}
+
+xg.by_coord<-function(model, season){
+  NULL
+}
+
+xs.by_team<-function(model, season){
+  NULL
+}
+
+xs.by_player<-function(model, season){
+  NULL
+}
+
+compress_model<-function(m){
+  m$y <- c()
+  m$model <- c()
+
+  m$residuals <- c()
+  m$effects <- c()
+  m$linear.predictors <- c()
+  m$weights <- c()
+  m$qr$qr <- c()
+  m$prior.weights <- c()
+
+  return(m)
 }
