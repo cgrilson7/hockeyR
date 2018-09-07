@@ -3249,7 +3249,7 @@ nabs <- function(x) {
 #' @export
 log_loss <- function(act, pred, allow_inf = FALSE) {
   eps <- as.numeric(!allow_inf) * 1e-15
-  
+
   rows <- ifelse(is.null(nrow(pred)), length(pred), nrow(pred))
 
   pred <- matrix(sapply(pred, function(x) max(eps, x)),
@@ -3429,11 +3429,12 @@ ds.merge_season<-function(season_dir, what=c('roster','shifts','pbp')){
     if(length(w) > 0){
       f %>%
         lapply(function(x) readr::read_delim(x, delim = "|", col_types = coltype[[w]], progress = FALSE)) %>%
-        bind_rows() %>%
+        dplyr::bind_rows() %>%
         readr::write_delim(path = paste0(season_dir, "/compiled.", w), delim = "|")
     }
     cat("\r")
   }
+  cat("Done parsing", season_dir)
 }
 
 #' Scrape & compile & savel all (or subset of) games in a season range. Saves a file in season dir with all unscraped games. All seasons scraping the same game
